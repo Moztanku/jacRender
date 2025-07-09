@@ -35,7 +35,7 @@ auto debug_callback(
 namespace vulkan {
 
 [[nodiscard]]
-constexpr auto to_string(const VkResult result) noexcept -> const char*
+auto to_string(const VkResult result) noexcept -> const char*
 {
     const std::map<VkResult, const char*> resultStrings = {
         {VK_SUCCESS, "VK_SUCCESS"},
@@ -110,7 +110,7 @@ constexpr auto to_string(const VkResult result) noexcept -> const char*
 }
 
 [[nodiscard]]
-constexpr auto get_debug_messenger_create_info() noexcept -> VkDebugUtilsMessengerCreateInfoEXT
+auto get_debug_messenger_create_info() noexcept -> VkDebugUtilsMessengerCreateInfoEXT
 {
     VkDebugUtilsMessengerCreateInfoEXT createInfo{};
 

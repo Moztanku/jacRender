@@ -10,9 +10,9 @@
 namespace vulkan {
 
 [[nodiscard]]
-constexpr auto to_string(const VkResult result) noexcept -> const char*;
+auto to_string(const VkResult result) noexcept -> const char*;
 
 [[nodiscard]]
-constexpr auto get_debug_messenger_create_info() noexcept -> VkDebugUtilsMessengerCreateInfoEXT;
+auto get_debug_messenger_create_info() noexcept -> VkDebugUtilsMessengerCreateInfoEXT;
 
 } // namespace vulkan

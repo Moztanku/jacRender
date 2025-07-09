@@ -5,18 +5,17 @@
 #pragma once
 
 #include <vulkan/vulkan.h>
-
-#include <span>
+#include <vector>
 
 namespace vulkan {
 
 class Instance {
 public:
     Instance(
-        const std::span<const char*> layers = {},
-        const std::span<const char*> extensions = {},
+        const std::vector<const char*>& layers = {},
+        const std::vector<const char*>& extensions = {},
         const VkInstanceCreateFlags flags = get_default_flags(),
-        const VkApplicationInfo& appInfo = get_default_app_info()
+        const VkApplicationInfo appInfo = get_default_app_info()
     );
     ~Instance();
 
@@ -24,13 +23,41 @@ public:
     Instance(Instance&& other) = delete;
     auto operator=(const Instance&) -> Instance& = delete;
     auto operator=(Instance&& other) -> Instance& = delete;
-private:
-    VkInstance m_instance{VK_NULL_HANDLE};
 
     [[nodiscard]]
-    constexpr static auto get_default_app_info() noexcept -> VkApplicationInfo;
+    auto getInstance() const noexcept -> const VkInstance& { return m_instance; }
+
     [[nodiscard]]
-    constexpr static auto get_default_flags() noexcept -> VkInstanceCreateFlags;
+    auto getInstance() noexcept -> VkInstance& { return m_instance; }
+
+private:
+    VkInstance m_instance{VK_NULL_HANDLE};
+    VkDebugUtilsMessengerEXT m_debugMessenger{VK_NULL_HANDLE};
+
+    [[nodiscard]]
+    constexpr static auto get_default_app_info() noexcept -> VkApplicationInfo
+    {
+        return VkApplicationInfo{
+            .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
+            .pNext = nullptr,
+            .pApplicationName = "Vulkan Application",
+            .applicationVersion = VK_MAKE_VERSION(1, 0, 0),
+            .pEngineName = "Vulkan Engine",
+            .engineVersion = VK_MAKE_VERSION(1, 0, 0),
+            .apiVersion = VK_API_VERSION_1_2
+        };
+    }
+
+    [[nodiscard]]
+    constexpr static auto get_default_flags() noexcept -> VkInstanceCreateFlags
+    {
+        VkInstanceCreateFlags flags = 0;
+
+        // Flag to enable enumeration of available physical devices
+        flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+
+        return flags;
+    }
 };
 
 } // namespace vulkan

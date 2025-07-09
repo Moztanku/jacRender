@@ -32,7 +32,11 @@ add_executable(${PROJECT_NAME})
 target_sources(${PROJECT_NAME}
     PRIVATE
     ${SRC_DIR}/main.cpp
-    ${SRC_DIR}/vulkan/Window.cpp)
+    ${SRC_DIR}/vulkan/Window.cpp
+    ${SRC_DIR}/vulkan/Instance.cpp
+    ${SRC_DIR}/vulkan/Surface.cpp
+    ${SRC_DIR}/vulkan/Device.cpp
+    ${SRC_DIR}/vulkan/utils.cpp)
 
 target_include_directories(${PROJECT_NAME}
     PRIVATE

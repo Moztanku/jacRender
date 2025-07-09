@@ -35,13 +35,19 @@ public:
         return nullptr;
     }
 
+    [[nodiscard]]
+    auto getWindow() const noexcept -> const GLFWwindow* { return m_window; }
+
+    [[nodiscard]]
+    auto getWindow() noexcept -> GLFWwindow* { return m_window; }
+
 private:
     GLFWwindow* m_window{nullptr};
 
-    int m_width{};
-    int m_height{};
-    const char* m_title{};
-    bool m_resizable{};
+    [[maybe_unused]] const char* m_title{};
+    [[maybe_unused]] int m_width{};
+    [[maybe_unused]] int m_height{};
+    [[maybe_unused]] bool m_resizable{};
 
     static std::atomic<uint8_t> s_windowCount;
 };
