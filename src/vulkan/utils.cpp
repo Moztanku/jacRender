@@ -7,11 +7,26 @@ namespace {
 
 auto debug_callback(
     VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-    VkDebugUtilsMessageTypeFlagsEXT messageType,
+    [[maybe_unused]] VkDebugUtilsMessageTypeFlagsEXT messageType,
     const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-    void* pUserData
+    [[maybe_unused]] void* pUserData
 ) VKAPI_CALL -> VKAPI_ATTR VkBool32 {
     constexpr std::ostream& OUT_FILE = std::cerr;
+
+    constexpr bool COLOR_OUTPUT = true;
+    const char* RESET   = COLOR_OUTPUT ? "\033[0m"      : "";
+    const char* WHITE   = COLOR_OUTPUT ? "\033[0;37m"   : "";
+    const char* GREEN   = COLOR_OUTPUT ? "\033[0;32m"   : "";
+    const char* YELLOW  = COLOR_OUTPUT ? "\033[0;33m"   : "";
+    const char* RED     = COLOR_OUTPUT ? "\033[0;31m"   : "";
+    const char* FADE    = COLOR_OUTPUT ? "\033[2m"      : "";
+
+    const char* severity_color =
+        messageSeverity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT ? WHITE :
+        messageSeverity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT ? GREEN :
+        messageSeverity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT ? YELLOW :
+        messageSeverity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT ? RED :
+        WHITE;
 
     const char* severity =
         messageSeverity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT ? "VERBOSE" :
@@ -21,10 +36,11 @@ auto debug_callback(
         "UNKNOWN";
 
     OUT_FILE << std::format(
-        "[{}] {}: {}\n",
-        severity,
-        pCallbackData->pMessageIdName ? pCallbackData->pMessageIdName : "UNKNOWN",
-        pCallbackData->pMessage
+        "[{}{}{}] {} {}@ {}\n",
+        severity_color, severity, RESET,
+        pCallbackData->pMessage,
+        FADE,
+        pCallbackData->pMessageIdName ? pCallbackData->pMessageIdName : "N/A"
     );
 
     return VK_FALSE; // Return VK_FALSE to indicate that the message should not be discarded

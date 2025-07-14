@@ -100,8 +100,9 @@ Instance::Instance(
     const std::vector<const char*>& layers,
     const std::vector<const char*>& extensions,
     const VkInstanceCreateFlags flags,
-    const VkApplicationInfo appInfo
-){
+    const VkApplicationInfo appInfo) :
+    m_validationLayers{layers}
+{
     if (!check_validation_layers(layers)) {
         throw std::runtime_error("Validation layers requested but not available.");
     }

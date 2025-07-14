@@ -3,8 +3,10 @@
 #include <stdexcept>
 #include <vector>
 #include <format>
+#include <set>
 
 #include "vulkan/utils.hpp"
+#include "common/constants.hpp"
 
 namespace {
 
@@ -47,13 +49,89 @@ auto get_physical_device(
     return bestDevice;
 }
 
+struct QueueFamilyIndices {
+    std::optional<uint32_t> graphicsFamily{std::nullopt};
+    std::optional<uint32_t> presentFamily{std::nullopt};
+};
+
+[[nodiscard]]
+auto is_complete(const QueueFamilyIndices& indices) -> bool {
+    return indices.graphicsFamily.has_value() && indices.presentFamily.has_value();
 }
+
+[[nodiscard]]
+auto get_queue_families(
+    const VkPhysicalDevice physDevice,
+    const VkSurfaceKHR surface
+) -> QueueFamilyIndices {
+    QueueFamilyIndices indices;
+
+    uint32_t queueFamilyCount{};
+    vkGetPhysicalDeviceQueueFamilyProperties(physDevice, &queueFamilyCount, nullptr);
+
+    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(physDevice, &queueFamilyCount, queueFamilies.data());
+
+    for (uint32_t i = 0; i < queueFamilyCount; i++) {
+        const auto& queueFamily = queueFamilies[i];
+
+        if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+            indices.graphicsFamily = i;
+        }
+
+        VkBool32 presentSupport = false;
+        vkGetPhysicalDeviceSurfaceSupportKHR(physDevice, i, surface, &presentSupport);
+
+        if (presentSupport) {
+            indices.presentFamily = i;
+        }
+
+        if (is_complete(indices)) {
+            break;
+        }
+    }
+
+    if (!is_complete(indices)) {
+        throw std::runtime_error("Failed to find suitable queue families.");
+    }
+
+    return indices;
+}
+
+[[nodiscard]]
+auto get_queue_create_infos(
+    const QueueFamilyIndices& indices
+) -> std::vector<VkDeviceQueueCreateInfo> {
+    std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+
+    std::set<uint32_t> uniqueQueueFamilies = {
+        indices.graphicsFamily.value(),
+        indices.presentFamily.value()
+    };
+
+    static const float QUEUE_PRIORITY = 1.0f;
+    for (const auto& queueFamily : uniqueQueueFamilies) {
+        VkDeviceQueueCreateInfo queueCreateInfo{};
+
+        queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+        queueCreateInfo.queueFamilyIndex = queueFamily;
+        queueCreateInfo.queueCount = 1;
+        queueCreateInfo.pQueuePriorities = &QUEUE_PRIORITY;
+        queueCreateInfos.push_back(queueCreateInfo);
+        queueCreateInfo.pNext = nullptr;
+    }
+
+    return queueCreateInfos;
+}
+
+} // namespace
 
 namespace vulkan {
 
 Device::Device(
     Instance& instance,
-    const Surface& surface,
+    Surface& surface,
+    std::vector<const char*> extensions,
     std::optional<VkPhysicalDevice> physDevice) :
     m_physDevice{
         physDevice.value_or(get_physical_device(instance, surface))}
@@ -61,20 +139,29 @@ Device::Device(
     VkDeviceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 
-    // TODO: Set up queues
-    createInfo.queueCreateInfoCount = 0;
-    createInfo.pQueueCreateInfos = nullptr;
+    const QueueFamilyIndices queueFamilies = get_queue_families(
+        m_physDevice,
+        surface.getSurface());
 
-    // TODO: Set up device features
-    createInfo.pEnabledFeatures = nullptr;
+    const auto queueCreateInfos = get_queue_create_infos(queueFamilies);
+    createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
+    createInfo.pQueueCreateInfos = queueCreateInfos.data();
 
-    // TODO: Pass validation layers
-    createInfo.enabledLayerCount = 0;
-    createInfo.ppEnabledLayerNames = nullptr;
+    const VkPhysicalDeviceFeatures deviceFeatures{};
+    createInfo.pEnabledFeatures = &deviceFeatures;
 
-    // TODO: Pass device extensions
-    createInfo.enabledExtensionCount = 0;
-    createInfo.ppEnabledExtensionNames = nullptr;
+    if (common::DEBUG) {
+        createInfo.enabledLayerCount = static_cast<uint32_t>(instance.getValidationLayers().size());
+        createInfo.ppEnabledLayerNames = instance.getValidationLayers().data();
+    } else {
+        createInfo.enabledLayerCount = 0;
+        createInfo.ppEnabledLayerNames = nullptr;
+    }
+
+    createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
+    createInfo.ppEnabledExtensionNames = extensions.empty() ?
+        nullptr :
+        extensions.data();
 
     const VkResult result = vkCreateDevice(
         m_physDevice,
@@ -87,10 +174,34 @@ Device::Device(
         throw std::runtime_error(
             std::format("Failed to create Vulkan device: {}", vulkan::to_string(result)));
     }
+
+    vkGetDeviceQueue(
+        m_device,
+        queueFamilies.graphicsFamily.value(),
+        0,
+        &m_graphicsQueue.queue);
+    m_graphicsQueue.familyIndex = queueFamilies.graphicsFamily.value();
+
+    vkGetDeviceQueue(
+        m_device,
+        queueFamilies.presentFamily.value(),
+        0,
+        &m_presentQueue.queue);
+    m_presentQueue.familyIndex = queueFamilies.presentFamily.value();
 }
 
 Device::~Device()
 {
+    if (m_graphicsQueue) {
+        vkQueueWaitIdle(m_graphicsQueue.queue);
+        m_graphicsQueue = {};
+    }
+
+    if (m_presentQueue) {
+        vkQueueWaitIdle(m_presentQueue.queue);
+        m_presentQueue = {};
+    }
+
     if (m_device != VK_NULL_HANDLE) {
         vkDestroyDevice(m_device, nullptr);
         m_device = VK_NULL_HANDLE;

@@ -13,4 +13,10 @@ constexpr bool DEBUG =
     true;
 #endif
 
+// Default entry point for shaders
+constexpr const char* SHADER_ENTRY_POINT = "main";
+
+// Shader directory
+constexpr const char* SHADER_DIRECTORY = SHADER_DIR_BASE "compiled/";
+
 } // namespace common

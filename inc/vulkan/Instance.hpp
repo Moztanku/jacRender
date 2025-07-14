@@ -30,9 +30,16 @@ public:
     [[nodiscard]]
     auto getInstance() noexcept -> VkInstance& { return m_instance; }
 
+    [[nodiscard]]
+    auto getValidationLayers() const noexcept -> const std::vector<const char*>& {
+        return m_validationLayers;
+    }
+
 private:
     VkInstance m_instance{VK_NULL_HANDLE};
     VkDebugUtilsMessengerEXT m_debugMessenger{VK_NULL_HANDLE};
+
+    std::vector<const char*> m_validationLayers{};
 
     [[nodiscard]]
     constexpr static auto get_default_app_info() noexcept -> VkApplicationInfo

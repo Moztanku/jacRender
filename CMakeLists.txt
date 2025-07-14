@@ -32,10 +32,16 @@ add_executable(${PROJECT_NAME})
 target_sources(${PROJECT_NAME}
     PRIVATE
     ${SRC_DIR}/main.cpp
+    # utilities
+    ${SRC_DIR}/common/utils.cpp
+    # Vulkan wrappers
     ${SRC_DIR}/vulkan/Window.cpp
     ${SRC_DIR}/vulkan/Instance.cpp
     ${SRC_DIR}/vulkan/Surface.cpp
     ${SRC_DIR}/vulkan/Device.cpp
+    ${SRC_DIR}/vulkan/Swapchain.cpp
+    ${SRC_DIR}/vulkan/Shader.cpp
+    ${SRC_DIR}/vulkan/Pipeline.cpp
     ${SRC_DIR}/vulkan/utils.cpp)
 
 target_include_directories(${PROJECT_NAME}
@@ -52,3 +58,11 @@ target_compile_options(${PROJECT_NAME}
     PRIVATE
     $<$<CONFIG:Debug>:${DEBUG_FLAGS}>
     $<$<CONFIG:Release>:${RELEASE_FLAGS}>)
+
+# compile shaders
+add_subdirectory(shaders)
+target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+    SHADER_DIR_BASE="${CMAKE_CURRENT_SOURCE_DIR}/shaders/"
+)
+add_dependencies(${PROJECT_NAME} shaders)

@@ -18,9 +18,20 @@ public:
         Window& window
     );
     ~Surface();
+
+    Surface(const Surface&) = delete;
+    Surface& operator=(const Surface&) = delete;
+    Surface(Surface&&) = delete;
+    Surface& operator=(Surface&&) = delete;
+
+    [[nodiscard]]
+    auto getSurface() -> VkSurfaceKHR {
+        return m_surface;
+    }
+
 private:
     VkSurfaceKHR m_surface{VK_NULL_HANDLE};
-    VkInstance m_instance{VK_NULL_HANDLE};
+    const VkInstance m_instance{VK_NULL_HANDLE};
 };
 
 } // namespace vulkan

@@ -46,3 +46,6 @@ bin/
 
 # vscode
 .vscode/
+
+# compiled shaders
+*.spv
