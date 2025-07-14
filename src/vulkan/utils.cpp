@@ -36,11 +36,12 @@ auto debug_callback(
         "UNKNOWN";
 
     OUT_FILE << std::format(
-        "[{}{}{}] {} {}@ {}\n",
+        "[{}{}{}] {} {}@ {}{}\n",
         severity_color, severity, RESET,
         pCallbackData->pMessage,
         FADE,
-        pCallbackData->pMessageIdName ? pCallbackData->pMessageIdName : "N/A"
+        pCallbackData->pMessageIdName ? pCallbackData->pMessageIdName : "N/A",
+        RESET
     );
 
     return VK_FALSE; // Return VK_FALSE to indicate that the message should not be discarded
