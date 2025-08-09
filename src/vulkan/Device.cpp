@@ -6,7 +6,7 @@
 #include <set>
 
 #include "vulkan/utils.hpp"
-#include "common/constants.hpp"
+#include "common/defs.hpp"
 
 namespace {
 

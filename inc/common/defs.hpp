@@ -1,6 +1,6 @@
 /**
- * * @file constants.hpp
- * * @brief This file contains constants used throughout the project.
+ * * @file defs.hpp
+ * * @brief This file contains common constants and definitions used throughout the project.
  */
 #pragma once
 

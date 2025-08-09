@@ -3,25 +3,62 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#include <string_view>
 #include <stdexcept>
 #include <format>
 
 #include "vulkan/utils.hpp"
-#include "common/constants.hpp"
+#include "common/defs.hpp"
 
 namespace {
 
 [[nodiscard]]
-auto check_validation_layers([[maybe_unused]] const std::vector<const char*>& layers) -> bool
+auto check_validation_layers(const std::vector<const char*>& layers) -> bool
 {
-    // TODO
+    uint32_t layerCount;
+    vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+
+    std::vector<VkLayerProperties> availableLayers(layerCount);
+    vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
+
+    for (std::string_view layerName : layers) {
+        bool layerFound = false;
+        for (const auto& layerProperties : availableLayers) {
+            if (layerName == layerProperties.layerName) {
+                layerFound = true;
+                break;
+            }
+        }
+        if (!layerFound) {
+            return false;
+        }
+    }
+
     return true;
 }
 
 [[nodiscard]]
-auto check_required_extensions([[maybe_unused]] const std::vector<const char*>& extensions) -> bool
+auto check_required_extensions(const std::vector<const char*>& extensions) -> bool
 {
-    // TODO
+    uint32_t extensionCount;
+    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
+
+    std::vector<VkExtensionProperties> availableExtensions(extensionCount);
+    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, availableExtensions.data());
+
+    for (std::string_view extensionName : extensions) {
+        bool extensionFound = false;
+        for (const auto& extensionProperties : availableExtensions) {
+            if (extensionName == extensionProperties.extensionName) {
+                extensionFound = true;
+                break;
+            }
+        }
+        if (!extensionFound) {
+            return false;
+        }
+    }
+
     return true;
 }
 

@@ -3,7 +3,7 @@
 #include <stdexcept>
 #include <format>
 
-#include "common/constants.hpp"
+#include "common/defs.hpp"
 #include "vulkan/utils.hpp"
 
 namespace {

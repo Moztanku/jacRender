@@ -42,7 +42,11 @@ target_sources(${PROJECT_NAME}
     ${SRC_DIR}/vulkan/Swapchain.cpp
     ${SRC_DIR}/vulkan/Shader.cpp
     ${SRC_DIR}/vulkan/Pipeline.cpp
-    ${SRC_DIR}/vulkan/utils.cpp)
+    ${SRC_DIR}/vulkan/Framebuffer.cpp
+    ${SRC_DIR}/vulkan/Commandbuffer.cpp
+    ${SRC_DIR}/vulkan/utils.cpp
+    # Renderer related
+    ${SRC_DIR}/Renderer.cpp)
 
 target_include_directories(${PROJECT_NAME}
     PRIVATE

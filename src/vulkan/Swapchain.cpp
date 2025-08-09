@@ -197,6 +197,8 @@ Swapchain::Swapchain(
 
     m_format = surface_format.format;
     m_extent = extent;
+
+    create_image_views();
 }
 
 auto Swapchain::create_image_views() -> void

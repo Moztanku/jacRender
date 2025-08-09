@@ -27,6 +27,12 @@ public:
     Pipeline& operator=(const Pipeline&) = delete;
     Pipeline(Pipeline&&) = delete;
     Pipeline& operator=(Pipeline&&) = delete;
+
+    [[nodiscard]]
+    auto getRenderPass() const noexcept -> const VkRenderPass& { return m_renderPass; }
+
+    [[nodiscard]]
+    auto getGraphicsPipeline() const noexcept -> const VkPipeline& { return m_graphicsPipeline; }
 private:
     VkRenderPass m_renderPass{VK_NULL_HANDLE};
     VkPipelineLayout m_pipelineLayout{VK_NULL_HANDLE};
