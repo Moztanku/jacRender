@@ -39,3 +39,13 @@
 
 # debug information files
 *.dwo
+
+# build directories
+build/
+bin/
+
+# vscode
+.vscode/
+
+# compiled shaders
+*.spv
