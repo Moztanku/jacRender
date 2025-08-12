@@ -38,6 +38,7 @@ public:
 
 private:
     std::vector<VkFramebuffer> m_framebuffers{};
+    // TODO: Use shared_ptr for shared ownership like with VkDevice
     const VkDevice m_device{VK_NULL_HANDLE};
 };
 

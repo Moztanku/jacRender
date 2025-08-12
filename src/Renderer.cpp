@@ -71,6 +71,18 @@ Renderer::Renderer(
         *m_pipeline
     );
 
+    // Create vertex and index buffers
+    const std::vector<Vertex> vertices = {
+        {{-0.5f, 0.5f}, {1.0f, 0.0f, 0.0f}}, // Bottom left
+        {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},  // Bottom right
+        {{0.0f, -0.5f}, {0.0f, 0.0f, 1.0f}}    // Top center
+    };
+
+    m_vertexBuffer = std::make_unique<vulkan::VertexBuffer>(
+        *m_device,
+        vertices
+    );
+
     m_maxFramesInFlight = static_cast<uint8_t>(m_swapchain->getImageCount());
 
     m_commandBuffersVec.reserve(m_maxFramesInFlight);
@@ -116,6 +128,7 @@ void Renderer::renderFrame() {
     m_commandBuffer.reset();
     m_commandBuffer.recordCommands(
         *m_pipeline,
+        *m_vertexBuffer,
         m_framebuffer->getFramebuffer(imageIndex),
         m_swapchain->getExtent()
     );

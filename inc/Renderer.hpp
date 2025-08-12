@@ -16,6 +16,7 @@
 #include "vulkan/Framebuffer.hpp"
 #include "vulkan/CommandBuffer.hpp"
 #include "vulkan/Sync.hpp"
+#include "vulkan/Buffer.hpp"
 
 class Renderer {
 public:
@@ -49,6 +50,9 @@ private:
     std::unique_ptr<vulkan::Swapchain> m_swapchain{};
     std::unique_ptr<vulkan::Pipeline> m_pipeline{};
     std::unique_ptr<vulkan::Framebuffer> m_framebuffer{};
+
+    std::unique_ptr<vulkan::VertexBuffer> m_vertexBuffer{};
+    std::unique_ptr<vulkan::IndexBuffer> m_indexBuffer{};
 
     std::vector<vulkan::CommandBuffer> m_commandBuffersVec{};
     std::vector<vulkan::Semaphore> m_imageAvailableVec{};

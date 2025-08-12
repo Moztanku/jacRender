@@ -10,6 +10,7 @@
 
 #include "vulkan/Device.hpp"
 #include "vulkan/Pipeline.hpp"
+#include "vulkan/Buffer.hpp"
 
 namespace vulkan {
 
@@ -26,7 +27,7 @@ public:
     CommandBuffer& operator=(CommandBuffer&&) = delete;
 
     auto reset() -> void { vkResetCommandBuffer(m_commandBuffer, 0); }
-    auto recordCommands(vulkan::Pipeline& pipeline, VkFramebuffer framebuffer, VkExtent2D extent) -> void
+    auto recordCommands(vulkan::Pipeline& pipeline, vulkan::VertexBuffer& vertexBuffer, VkFramebuffer framebuffer, VkExtent2D extent) -> void
     {
         VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -71,7 +72,12 @@ public:
         scissor.extent = extent;
         vkCmdSetScissor(m_commandBuffer, 0, 1, &scissor);
 
+        // Bind the vertex buffer
+        VkBuffer vertexBuffers[] = {vertexBuffer.getBuffer()};
+        VkDeviceSize offsets[] = {0};
+        vkCmdBindVertexBuffers(m_commandBuffer, 0, 1, vertexBuffers, offsets);
         vkCmdDraw(m_commandBuffer, 3, 1, 0, 0); // Draw a triangle (assuming a triangle vertex buffer is bound)
+
         vkCmdEndRenderPass(m_commandBuffer);
 
         const VkResult endResult = vkEndCommandBuffer(m_commandBuffer);

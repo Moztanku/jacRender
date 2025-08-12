@@ -3,6 +3,7 @@
 #include <stdexcept>
 #include <format>
 
+#include "Vertex.hpp"
 #include "common/defs.hpp"
 #include "vulkan/utils.hpp"
 
@@ -77,11 +78,14 @@ Pipeline::Pipeline(
     // Setup the vertex input state, which describes the vertex data layout
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    vertexInputInfo.vertexBindingDescriptionCount = 0; // TODO: Set this if using vertex buffers
-    vertexInputInfo.pVertexBindingDescriptions = nullptr; // No vertex bindings
 
-    vertexInputInfo.vertexAttributeDescriptionCount = 0; // TODO: Set this if using vertex attributes
-    vertexInputInfo.pVertexAttributeDescriptions = nullptr; // No vertex attributes
+    const auto bindingDescription = Vertex::get_binding_description();
+    vertexInputInfo.vertexBindingDescriptionCount = 1;
+    vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
+
+    const auto attributeDescriptions = Vertex::get_attribute_descriptions();
+    vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
+    vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 
     // Setup the input assembly state, which describes how vertices are assembled into primitives
     VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
