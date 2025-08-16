@@ -9,6 +9,7 @@
 
 namespace vlk {
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkCreateDescriptorSetLayout.html
 void CreateDescriptorSetLayout(
     VkDevice                                    device,
     const VkDescriptorSetLayoutCreateInfo*      pCreateInfo,
@@ -16,12 +17,14 @@ void CreateDescriptorSetLayout(
     VkDescriptorSetLayout*                      pSetLayout,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkDestroyDescriptorSetLayout.html
 void DestroyDescriptorSetLayout(
     VkDevice                                    device,
     VkDescriptorSetLayout                       descriptorSetLayout,
     const VkAllocationCallbacks*                pAllocator,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkCmdDraw.html
 void CmdDraw(
     VkCommandBuffer                             commandBuffer,
     uint32_t                                    vertexCount,
@@ -30,6 +33,8 @@ void CmdDraw(
     uint32_t                                    firstInstance,
     const std::source_location&                 location = std::source_location::current());
 
+
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkCmdDrawIndexed.html
 void CmdDrawIndexed(
     VkCommandBuffer                             commandBuffer,
     uint32_t                                    indexCount,
@@ -39,6 +44,7 @@ void CmdDrawIndexed(
     uint32_t                                    firstInstance,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkAcquireNextImageKHR.html
 void AcquireNextImageKHR(
     VkDevice                                    device,
     VkSwapchainKHR                              swapchain,
@@ -49,6 +55,7 @@ void AcquireNextImageKHR(
     const std::source_location&                 location = std::source_location::current());
 
 // Debug Messenger functions
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkCreateDebugUtilsMessengerEXT.html
 void CreateDebugUtilsMessengerEXT(
     VkInstance                                  instance,
     const VkDebugUtilsMessengerCreateInfoEXT*   pCreateInfo,
@@ -56,6 +63,7 @@ void CreateDebugUtilsMessengerEXT(
     VkDebugUtilsMessengerEXT*                   pMessenger,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkDestroyDebugUtilsMessengerEXT.html
 void DestroyDebugUtilsMessengerEXT(
     VkInstance                                  instance,
     VkDebugUtilsMessengerEXT                    messenger,
@@ -63,23 +71,27 @@ void DestroyDebugUtilsMessengerEXT(
     const std::source_location&                 location = std::source_location::current());
 
 // Instance functions
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkEnumerateInstanceLayerProperties.html
 void EnumerateInstanceLayerProperties(
     uint32_t*                                   pPropertyCount,
     VkLayerProperties*                          pProperties,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkEnumerateInstanceExtensionProperties.html
 void EnumerateInstanceExtensionProperties(
     const char*                                 pLayerName,
     uint32_t*                                   pPropertyCount,
     VkExtensionProperties*                      pProperties,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkCreateInstance.html
 void CreateInstance(
     const VkInstanceCreateInfo*                 pCreateInfo,
     const VkAllocationCallbacks*                pAllocator,
     VkInstance*                                 pInstance,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkDestroyInstance.html
 void DestroyInstance(
     VkInstance                                  instance,
     const VkAllocationCallbacks*                pAllocator,
@@ -91,6 +103,7 @@ void DestroyInstance(
 //     const std::source_location&                 location = std::source_location::current());
 
 // Sync functions
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkCreateSemaphore.html
 void CreateSemaphore(
     VkDevice                                    device,
     const VkSemaphoreCreateInfo*                pCreateInfo,
@@ -98,12 +111,14 @@ void CreateSemaphore(
     VkSemaphore*                                pSemaphore,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkDestroySemaphore.html
 void DestroySemaphore(
     VkDevice                                    device,
     VkSemaphore                                 semaphore,
     const VkAllocationCallbacks*                pAllocator,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkCreateFence.html
 void CreateFence(
     VkDevice                                    device,
     const VkFenceCreateInfo*                    pCreateInfo,
@@ -111,12 +126,14 @@ void CreateFence(
     VkFence*                                    pFence,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkDestroyFence.html
 void DestroyFence(
     VkDevice                                    device,
     VkFence                                     fence,
     const VkAllocationCallbacks*                pAllocator,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkWaitForFences.html
 VkResult WaitForFences(
     VkDevice                                    device,
     uint32_t                                    fenceCount,
@@ -125,35 +142,41 @@ VkResult WaitForFences(
     uint64_t                                    timeout,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkResetFences.html
 VkResult ResetFences(
     VkDevice                                    device,
     uint32_t                                    fenceCount,
     const VkFence*                              pFences,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkGetFenceStatus.html
 VkResult GetFenceStatus(
     VkDevice                                    device,
     VkFence                                     fence,
     const std::source_location&                 location = std::source_location::current());
 
 // Device functions
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkEnumeratePhysicalDevices.html
 void EnumeratePhysicalDevices(
     VkInstance                                  instance,
     uint32_t*                                   pPhysicalDeviceCount,
     VkPhysicalDevice*                           pPhysicalDevices,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkGetPhysicalDeviceMemoryProperties.html
 void GetPhysicalDeviceMemoryProperties(
     VkPhysicalDevice                            physicalDevice,
     VkPhysicalDeviceMemoryProperties*           pMemoryProperties,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkGetPhysicalDeviceQueueFamilyProperties.html
 void GetPhysicalDeviceQueueFamilyProperties(
     VkPhysicalDevice                            physicalDevice,
     uint32_t*                                   pQueueFamilyPropertyCount,
     VkQueueFamilyProperties*                    pQueueFamilyProperties,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkGetPhysicalDeviceSurfaceSupportKHR.html
 void GetPhysicalDeviceSurfaceSupportKHR(
     VkPhysicalDevice                            physicalDevice,
     uint32_t                                    queueFamilyIndex,
@@ -161,6 +184,7 @@ void GetPhysicalDeviceSurfaceSupportKHR(
     VkBool32*                                   pSupported,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkCreateDevice.html
 void CreateDevice(
     VkPhysicalDevice                            physicalDevice,
     const VkDeviceCreateInfo*                   pCreateInfo,
@@ -168,11 +192,13 @@ void CreateDevice(
     VkDevice*                                   pDevice,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkDestroyDevice.html
 void DestroyDevice(
     VkDevice                                    device,
     const VkAllocationCallbacks*                pAllocator,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkGetDeviceQueue.html
 void GetDeviceQueue(
     VkDevice                                    device,
     uint32_t                                    queueFamilyIndex,
@@ -180,15 +206,18 @@ void GetDeviceQueue(
     VkQueue*                                    pQueue,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkQueueWaitIdle.html
 void QueueWaitIdle(
     VkQueue                                     queue,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkDeviceWaitIdle.html
 void DeviceWaitIdle(
     VkDevice                                    device,
     const std::source_location&                 location = std::source_location::current());
 
 // Queue functions
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkQueueSubmit.html
 void QueueSubmit(
     VkQueue                                     queue,
     uint32_t                                    submitCount,
@@ -196,18 +225,21 @@ void QueueSubmit(
     VkFence                                     fence,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkQueuePresentKHR.html
 void QueuePresentKHR(
     VkQueue                                     queue,
     const VkPresentInfoKHR*                     pPresentInfo,
     const std::source_location&                 location = std::source_location::current());
 
 // Surface functions
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkGetPhysicalDeviceSurfaceCapabilitiesKHR.html
 void GetPhysicalDeviceSurfaceCapabilitiesKHR(
     VkPhysicalDevice                            physicalDevice,
     VkSurfaceKHR                                surface,
     VkSurfaceCapabilitiesKHR*                   pSurfaceCapabilities,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkGetPhysicalDeviceSurfaceFormatsKHR.html
 void GetPhysicalDeviceSurfaceFormatsKHR(
     VkPhysicalDevice                            physicalDevice,
     VkSurfaceKHR                                surface,
@@ -215,6 +247,7 @@ void GetPhysicalDeviceSurfaceFormatsKHR(
     VkSurfaceFormatKHR*                         pSurfaceFormats,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkGetPhysicalDeviceSurfacePresentModesKHR.html
 void GetPhysicalDeviceSurfacePresentModesKHR(
     VkPhysicalDevice                            physicalDevice,
     VkSurfaceKHR                                surface,
@@ -222,6 +255,7 @@ void GetPhysicalDeviceSurfacePresentModesKHR(
     VkPresentModeKHR*                           pPresentModes,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkDestroySurfaceKHR.html
 void DestroySurfaceKHR(
     VkInstance                                  instance,
     VkSurfaceKHR                                surface,
@@ -229,6 +263,7 @@ void DestroySurfaceKHR(
     const std::source_location&                 location = std::source_location::current());
 
 // Swapchain functions
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkCreateSwapchainKHR.html
 void CreateSwapchainKHR(
     VkDevice                                    device,
     const VkSwapchainCreateInfoKHR*             pCreateInfo,
@@ -236,12 +271,14 @@ void CreateSwapchainKHR(
     VkSwapchainKHR*                             pSwapchain,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkDestroySwapchainKHR.html
 void DestroySwapchainKHR(
     VkDevice                                    device,
     VkSwapchainKHR                              swapchain,
     const VkAllocationCallbacks*                pAllocator,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkGetSwapchainImagesKHR.html
 void GetSwapchainImagesKHR(
     VkDevice                                    device,
     VkSwapchainKHR                              swapchain,
@@ -249,6 +286,7 @@ void GetSwapchainImagesKHR(
     VkImage*                                    pSwapchainImages,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkCreateImageView.html
 void CreateImageView(
     VkDevice                                    device,
     const VkImageViewCreateInfo*                pCreateInfo,
@@ -256,6 +294,7 @@ void CreateImageView(
     VkImageView*                                pView,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkDestroyImageView.html
 void DestroyImageView(
     VkDevice                                    device,
     VkImageView                                 imageView,
@@ -263,6 +302,7 @@ void DestroyImageView(
     const std::source_location&                 location = std::source_location::current());
 
 // Buffer functions
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkCreateBuffer.html
 void CreateBuffer(
     VkDevice                                    device,
     const VkBufferCreateInfo*                   pCreateInfo,
@@ -270,18 +310,21 @@ void CreateBuffer(
     VkBuffer*                                   pBuffer,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkDestroyBuffer.html
 void DestroyBuffer(
     VkDevice                                    device,
     VkBuffer                                    buffer,
     const VkAllocationCallbacks*                pAllocator,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkGetBufferMemoryRequirements.html
 void GetBufferMemoryRequirements(
     VkDevice                                    device,
     VkBuffer                                    buffer,
     VkMemoryRequirements*                       pMemoryRequirements,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkAllocateMemory.html
 void AllocateMemory(
     VkDevice                                    device,
     const VkMemoryAllocateInfo*                 pAllocateInfo,
@@ -289,12 +332,14 @@ void AllocateMemory(
     VkDeviceMemory*                             pMemory,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkFreeMemory.html
 void FreeMemory(
     VkDevice                                    device,
     VkDeviceMemory                              memory,
     const VkAllocationCallbacks*                pAllocator,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkBindBufferMemory.html
 void BindBufferMemory(
     VkDevice                                    device,
     VkBuffer                                    buffer,
@@ -302,6 +347,7 @@ void BindBufferMemory(
     VkDeviceSize                                memoryOffset,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkMapMemory.html
 void MapMemory(
     VkDevice                                    device,
     VkDeviceMemory                              memory,
@@ -311,12 +357,14 @@ void MapMemory(
     void**                                      ppData,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkUnmapMemory.html
 void UnmapMemory(
     VkDevice                                    device,
     VkDeviceMemory                              memory,
     const std::source_location&                 location = std::source_location::current());
 
 // Command buffer functions
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkCreateCommandPool.html
 void CreateCommandPool(
     VkDevice                                    device,
     const VkCommandPoolCreateInfo*              pCreateInfo,
@@ -324,18 +372,21 @@ void CreateCommandPool(
     VkCommandPool*                              pCommandPool,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkDestroyCommandPool.html
 void DestroyCommandPool(
     VkDevice                                    device,
     VkCommandPool                               commandPool,
     const VkAllocationCallbacks*                pAllocator,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkAllocateCommandBuffers.html
 void AllocateCommandBuffers(
     VkDevice                                    device,
     const VkCommandBufferAllocateInfo*          pAllocateInfo,
     VkCommandBuffer*                            pCommandBuffers,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkFreeCommandBuffers.html
 void FreeCommandBuffers(
     VkDevice                                    device,
     VkCommandPool                               commandPool,
@@ -343,36 +394,43 @@ void FreeCommandBuffers(
     const VkCommandBuffer*                      pCommandBuffers,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkResetCommandBuffer.html
 void ResetCommandBuffer(
     VkCommandBuffer                             commandBuffer,
     VkCommandBufferResetFlags                   flags,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkBeginCommandBuffer.html
 void BeginCommandBuffer(
     VkCommandBuffer                             commandBuffer,
     const VkCommandBufferBeginInfo*             pBeginInfo,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkEndCommandBuffer.html
 void EndCommandBuffer(
     VkCommandBuffer                             commandBuffer,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkCmdBeginRenderPass.html
 void CmdBeginRenderPass(
     VkCommandBuffer                             commandBuffer,
     const VkRenderPassBeginInfo*                pRenderPassBegin,
     VkSubpassContents                           contents,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkCmdEndRenderPass.html
 void CmdEndRenderPass(
     VkCommandBuffer                             commandBuffer,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkCmdBindPipeline.html
 void CmdBindPipeline(
     VkCommandBuffer                             commandBuffer,
     VkPipelineBindPoint                         pipelineBindPoint,
     VkPipeline                                  pipeline,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkCmdBindVertexBuffers.html
 void CmdBindVertexBuffers(
     VkCommandBuffer                             commandBuffer,
     uint32_t                                    firstBinding,
@@ -381,6 +439,7 @@ void CmdBindVertexBuffers(
     const VkDeviceSize*                         pOffsets,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkCmdBindIndexBuffer.html
 void CmdBindIndexBuffer(
     VkCommandBuffer                             commandBuffer,
     VkBuffer                                    buffer,
@@ -388,6 +447,7 @@ void CmdBindIndexBuffer(
     VkIndexType                                 indexType,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkCmdBindDescriptorSets.html
 void CmdBindDescriptorSets(
     VkCommandBuffer                             commandBuffer,
     VkPipelineBindPoint                         pipelineBindPoint,
@@ -399,6 +459,7 @@ void CmdBindDescriptorSets(
     const uint32_t*                             pDynamicOffsets,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkCmdSetViewport.html
 void CmdSetViewport(
     VkCommandBuffer                             commandBuffer,
     uint32_t                                    firstViewport,
@@ -406,6 +467,7 @@ void CmdSetViewport(
     const VkViewport*                           pViewports,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkCmdSetScissor.html
 void CmdSetScissor(
     VkCommandBuffer                             commandBuffer,
     uint32_t                                    firstScissor,
@@ -413,6 +475,7 @@ void CmdSetScissor(
     const VkRect2D*                             pScissors,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkCmdCopyBuffer.html
 void CmdCopyBuffer(
     VkCommandBuffer                             commandBuffer,
     VkBuffer                                    srcBuffer,
@@ -422,6 +485,7 @@ void CmdCopyBuffer(
     const std::source_location&                 location = std::source_location::current());
 
 // Pipeline functions
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkCreateGraphicsPipelines.html
 void CreateGraphicsPipelines(
     VkDevice                                    device,
     VkPipelineCache                             pipelineCache,
@@ -431,12 +495,14 @@ void CreateGraphicsPipelines(
     VkPipeline*                                 pPipelines,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkDestroyPipeline.html
 void DestroyPipeline(
     VkDevice                                    device,
     VkPipeline                                  pipeline,
     const VkAllocationCallbacks*                pAllocator,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkCreatePipelineLayout.html
 void CreatePipelineLayout(
     VkDevice                                    device,
     const VkPipelineLayoutCreateInfo*           pCreateInfo,
@@ -444,12 +510,14 @@ void CreatePipelineLayout(
     VkPipelineLayout*                           pPipelineLayout,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkDestroyPipelineLayout.html
 void DestroyPipelineLayout(
     VkDevice                                    device,
     VkPipelineLayout                            pipelineLayout,
     const VkAllocationCallbacks*                pAllocator,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkCreateRenderPass.html
 void CreateRenderPass(
     VkDevice                                    device,
     const VkRenderPassCreateInfo*               pCreateInfo,
@@ -457,6 +525,7 @@ void CreateRenderPass(
     VkRenderPass*                               pRenderPass,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkDestroyRenderPass.html
 void DestroyRenderPass(
     VkDevice                                    device,
     VkRenderPass                                renderPass,
@@ -464,6 +533,7 @@ void DestroyRenderPass(
     const std::source_location&                 location = std::source_location::current());
 
 // Framebuffer functions
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkCreateFramebuffer.html
 void CreateFramebuffer(
     VkDevice                                    device,
     const VkFramebufferCreateInfo*              pCreateInfo,
@@ -471,6 +541,7 @@ void CreateFramebuffer(
     VkFramebuffer*                              pFramebuffer,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkDestroyFramebuffer.html
 void DestroyFramebuffer(
     VkDevice                                    device,
     VkFramebuffer                               framebuffer,
@@ -478,6 +549,7 @@ void DestroyFramebuffer(
     const std::source_location&                 location = std::source_location::current());
 
 // Descriptor set functions
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkCreateDescriptorPool.html
 void CreateDescriptorPool(
     VkDevice                                    device,
     const VkDescriptorPoolCreateInfo*           pCreateInfo,
@@ -485,18 +557,21 @@ void CreateDescriptorPool(
     VkDescriptorPool*                           pDescriptorPool,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkDestroyDescriptorPool.html
 void DestroyDescriptorPool(
     VkDevice                                    device,
     VkDescriptorPool                            descriptorPool,
     const VkAllocationCallbacks*                pAllocator,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkAllocateDescriptorSets.html
 void AllocateDescriptorSets(
     VkDevice                                    device,
     const VkDescriptorSetAllocateInfo*          pAllocateInfo,
     VkDescriptorSet*                            pDescriptorSets,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkUpdateDescriptorSets.html
 void UpdateDescriptorSets(
     VkDevice                                    device,
     uint32_t                                    descriptorWriteCount,
@@ -506,6 +581,7 @@ void UpdateDescriptorSets(
     const std::source_location&                 location = std::source_location::current());
 
 // Shader functions
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkCreateShaderModule.html
 void CreateShaderModule(
     VkDevice                                    device,
     const VkShaderModuleCreateInfo*             pCreateInfo,
@@ -513,6 +589,7 @@ void CreateShaderModule(
     VkShaderModule*                             pShaderModule,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkDestroyShaderModule.html
 void DestroyShaderModule(
     VkDevice                                    device,
     VkShaderModule                              shaderModule,
