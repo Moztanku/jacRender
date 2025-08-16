@@ -8,6 +8,7 @@
 
 #include <memory>
 
+#include "vulkan/utils.hpp"
 #include "vulkan/Device.hpp"
 #include "vulkan/Pipeline.hpp"
 #include "vulkan/Buffer.hpp"
@@ -26,68 +27,31 @@ public:
     CommandBuffer& operator=(const CommandBuffer&) = delete;
     CommandBuffer& operator=(CommandBuffer&&) = delete;
 
-    auto reset() -> void { vkResetCommandBuffer(m_commandBuffer, 0); }
-    auto recordCommands(vulkan::Pipeline& pipeline, vulkan::VertexBuffer& vertexBuffer, VkFramebuffer framebuffer, VkExtent2D extent) -> void
-    {
-        VkCommandBufferBeginInfo beginInfo{};
-        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        beginInfo.flags = 0; // No flags for now
-        beginInfo.pInheritanceInfo = nullptr; // Not a secondary command buffer
+    // Reset the command buffer for reuse
+    auto reset() -> void;
 
-        const VkResult beginResult = vkBeginCommandBuffer(m_commandBuffer, &beginInfo);
-        if (beginResult != VK_SUCCESS) {
-            throw std::runtime_error(
-                std::format("Failed to begin command buffer recording: {}", vulkan::to_string(beginResult))
-            );
-        }
+    // Begin and end methods for command buffer recording
+    auto begin(
+        const VkRenderPass&,
+        const VkFramebuffer&,
+        const VkExtent2D&,
+        const VkClearValue& = get_default<VkClearValue>()) -> void;
+    auto end() -> void;
 
-        // Begin render pass
-        VkRenderPassBeginInfo renderPassInfo{};
-        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        renderPassInfo.renderPass = pipeline.getRenderPass();
-        renderPassInfo.framebuffer = framebuffer;
+    // Bind methods for pipeline and buffers
+    auto bind(const Pipeline&) -> void;
+    auto bind(const VertexBuffer&) -> void;
+    auto bind(const IndexBuffer&) -> void;
 
-        renderPassInfo.renderArea.offset = {0, 0};
-        renderPassInfo.renderArea.extent = extent;
+    auto set(const VkViewport&) -> void;
+    auto set(const VkRect2D&) -> void;
 
-        VkClearValue clearColor{};
-        clearColor.color = {{0.0f, 0.0f, 0.0f, 1.0f}}; // Clear to black
-        renderPassInfo.clearValueCount = 1;
-        renderPassInfo.pClearValues = &clearColor;
+    // Issue draw commands
+    struct DrawCommandI;
+    struct DrawNoIndex;
+    struct DrawIndexed;
 
-        vkCmdBeginRenderPass(m_commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-        vkCmdBindPipeline(m_commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getGraphicsPipeline());
-    
-        VkViewport viewport{};
-        viewport.x = 0.0f;
-        viewport.y = 0.0f;
-        viewport.width = extent.width;
-        viewport.height = extent.height;
-        viewport.minDepth = 0.0f;
-        viewport.maxDepth = 1.0f;
-        vkCmdSetViewport(m_commandBuffer, 0, 1, &viewport);
-
-        VkRect2D scissor{};
-        scissor.offset = {0, 0};
-        scissor.extent = extent;
-        vkCmdSetScissor(m_commandBuffer, 0, 1, &scissor);
-
-        // Bind the vertex buffer
-        VkBuffer vertexBuffers[] = {vertexBuffer.getBuffer()};
-        VkDeviceSize offsets[] = {0};
-        vkCmdBindVertexBuffers(m_commandBuffer, 0, 1, vertexBuffers, offsets);
-        vkCmdDraw(m_commandBuffer, 3, 1, 0, 0); // Draw a triangle (assuming a triangle vertex buffer is bound)
-
-        vkCmdEndRenderPass(m_commandBuffer);
-
-        const VkResult endResult = vkEndCommandBuffer(m_commandBuffer);
-
-        if (endResult != VK_SUCCESS) {
-            throw std::runtime_error(
-                std::format("Failed to end command buffer recording: {}", vulkan::to_string(endResult))
-            );
-        }
-    }
+    auto record(const DrawCommandI&) -> void;
 
     [[nodiscard]]
     auto getCommandPool() noexcept -> std::shared_ptr<VkCommandPool>& { return m_commandPool; }
@@ -99,7 +63,62 @@ private:
     const VkDevice m_device{VK_NULL_HANDLE};
 
     std::shared_ptr<VkCommandPool> m_commandPool{nullptr};
+}; // class CommandBuffer
 
+// TODO: maybe move these to a separate file?
+// Interface for draw commands
+struct CommandBuffer::DrawCommandI {
+    virtual ~DrawCommandI() = default;
+    virtual auto record(VkCommandBuffer) const -> void = 0;
+};
+
+struct CommandBuffer::DrawNoIndex final : CommandBuffer::DrawCommandI {
+DrawNoIndex(
+    uint32_t vertex_count,
+    uint32_t instance_count = 1,
+    uint32_t first_vertex = 0,
+    uint32_t first_instance = 0
+) :
+    vertex_count{vertex_count},
+    instance_count{instance_count},
+    first_vertex{first_vertex},
+    first_instance{first_instance}
+{}
+
+    virtual auto record(VkCommandBuffer commandBuffer) const -> void override {
+        vkCmdDraw(commandBuffer, vertex_count, instance_count, first_vertex, first_instance);
+    }
+
+    uint32_t vertex_count;
+    uint32_t instance_count;
+    uint32_t first_vertex;
+    uint32_t first_instance;
+};
+
+struct CommandBuffer::DrawIndexed final : CommandBuffer::DrawCommandI {
+    DrawIndexed(
+        uint32_t index_count,
+        uint32_t instance_count = 1,
+        uint32_t first_index = 0,
+        int32_t vertex_offset = 0,
+        uint32_t first_instance = 0
+    ) :
+        index_count{index_count},
+        instance_count{instance_count},
+        first_index{first_index},
+        vertex_offset{vertex_offset},
+        first_instance{first_instance}
+    {}
+
+    virtual auto record(VkCommandBuffer commandBuffer) const -> void override {
+        vkCmdDrawIndexed(commandBuffer, index_count, instance_count, first_index, vertex_offset, first_instance);
+    }
+
+    uint32_t index_count;
+    uint32_t instance_count;
+    uint32_t first_index;
+    int32_t vertex_offset;
+    uint32_t first_instance;
 };
 
 } // namespace vulkan

@@ -81,4 +81,65 @@ CommandBuffer::~CommandBuffer() {
     }
 }
 
+auto CommandBuffer::reset() -> void {
+    vkResetCommandBuffer(m_commandBuffer, 0);
+}
+
+auto CommandBuffer::begin(
+    const VkRenderPass& renderPass,
+    const VkFramebuffer& frameBuffer,
+    const VkExtent2D& extent,
+    const VkClearValue& clearValue) -> void {
+    VkCommandBufferBeginInfo beginInfo{};
+
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = 0;
+    beginInfo.pInheritanceInfo = nullptr;
+
+    // TODO: wrap vulkan calls in a utility function
+    vkBeginCommandBuffer(m_commandBuffer, &beginInfo);
+
+    // Begin render pass
+    VkRenderPassBeginInfo renderPassInfo{};
+    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    renderPassInfo.renderPass = renderPass;
+    renderPassInfo.framebuffer = frameBuffer;
+    renderPassInfo.renderArea.offset = {0, 0};
+    renderPassInfo.renderArea.extent = extent;
+    renderPassInfo.clearValueCount = 1;
+    renderPassInfo.pClearValues = &clearValue;
+
+    vkCmdBeginRenderPass(m_commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+}
+
+auto CommandBuffer::end() -> void {
+    vkCmdEndRenderPass(m_commandBuffer);
+    vkEndCommandBuffer(m_commandBuffer);
+}
+
+auto CommandBuffer::bind(const Pipeline& pipeline) -> void {
+    vkCmdBindPipeline(m_commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getGraphicsPipeline());
+}
+
+auto CommandBuffer::bind(const VertexBuffer& vertexBuffer) -> void {
+    VkBuffer buffers[] = {vertexBuffer.getBuffer()};
+    VkDeviceSize offsets[] = {0};
+    vkCmdBindVertexBuffers(m_commandBuffer, 0, 1, buffers, offsets);
+}
+
+auto CommandBuffer::bind(const IndexBuffer& indexBuffer) -> void {
+    vkCmdBindIndexBuffer(m_commandBuffer, indexBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT32);
+}
+
+auto CommandBuffer::set(const VkViewport& viewport) -> void {
+    vkCmdSetViewport(m_commandBuffer, 0, 1, &viewport);
+}
+auto CommandBuffer::set(const VkRect2D& scissor) -> void {
+    vkCmdSetScissor(m_commandBuffer, 0, 1, &scissor);
+}
+
+auto CommandBuffer::record(const DrawCommandI& command) -> void {
+    command.record(m_commandBuffer);
+}
+
 } // namespace vulkan

@@ -42,6 +42,26 @@ public:
     }
 
     [[nodiscard]]
+    auto getViewport() const noexcept -> VkViewport {
+        return VkViewport{
+            .x = 0.0f,
+            .y = 0.0f,
+            .width = static_cast<float>(m_extent.width),
+            .height = static_cast<float>(m_extent.height),
+            .minDepth = 0.0f,
+            .maxDepth = 1.0f
+        };
+    }
+
+    [[nodiscard]]
+    auto getScissor() const noexcept -> VkRect2D {
+        return VkRect2D{
+            .offset = {0, 0},
+            .extent = m_extent
+        };
+    }
+
+    [[nodiscard]]
     auto acquireNextImage(VkSemaphore imageAvailable) -> uint32_t {
         uint32_t imageIndex;
         const VkResult result = vkAcquireNextImageKHR(

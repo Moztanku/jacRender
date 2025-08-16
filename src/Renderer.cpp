@@ -126,12 +126,19 @@ void Renderer::renderFrame() {
 
     // 3. Record commands into the command buffer
     m_commandBuffer.reset();
-    m_commandBuffer.recordCommands(
-        *m_pipeline,
-        *m_vertexBuffer,
+    m_commandBuffer.begin(
+        m_pipeline->getRenderPass(),
         m_framebuffer->getFramebuffer(imageIndex),
         m_swapchain->getExtent()
     );
+    m_commandBuffer.set(m_swapchain->getViewport());
+    m_commandBuffer.set(m_swapchain->getScissor());
+    m_commandBuffer.bind(*m_pipeline);
+    m_commandBuffer.bind(*m_vertexBuffer);
+
+    const auto draw_command = vulkan::CommandBuffer::DrawNoIndex{3}; // 3 vertices hardcoded for now
+    m_commandBuffer.record(draw_command);
+    m_commandBuffer.end();
 
     // 4. Submit the command buffer to the graphics queue (wait for the image to be available)
     VkSubmitInfo submitInfo{};

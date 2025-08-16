@@ -1,10 +1,4 @@
 # jacRender
 Renderer written from scratch with C++ and Vulkan.
 
-Window
-
-Instance + Debug Messenger
-Device + PhysicalDevice, Queues
-Swapchain + VkImage, VkImageView, VkSurface, 
-
-TODO: Think about how to handle buffer binding
+TODO: think about moving Framebuffer into Swapchain, as Framebuffer doesn't do a lot
