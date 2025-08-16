@@ -5,8 +5,13 @@
 #include "vulkan/Window.hpp"
 #include "Renderer.hpp"
 
+void RETURN() {
+    return;
+}
+
+void TAKE(void) {}
+
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) -> int {
-    // TODO: Move out Window from vulkan namespace
     vulkan::Window window{};
     Renderer renderer(window);
 

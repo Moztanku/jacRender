@@ -3,6 +3,7 @@
 #include <stdexcept>
 #include <format>
 
+#include "vulkan/wrapper.hpp"
 #include "vulkan/utils.hpp"
 
 namespace {
@@ -32,7 +33,7 @@ Surface::Surface(
 Surface::~Surface()
 {
     if (m_surface != VK_NULL_HANDLE) {
-        vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
+        vlk::DestroySurfaceKHR(m_instance, m_surface, nullptr);
         m_surface = VK_NULL_HANDLE;
     }
 }

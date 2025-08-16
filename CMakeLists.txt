@@ -47,6 +47,7 @@ target_sources(${PROJECT_NAME}
     ${SRC_DIR}/vulkan/Commandbuffer.cpp
     ${SRC_DIR}/vulkan/Buffer.cpp
     ${SRC_DIR}/vulkan/utils.cpp
+    ${SRC_DIR}/vulkan/wrapper.cpp
     # Renderer related
     ${SRC_DIR}/Renderer.cpp)
 

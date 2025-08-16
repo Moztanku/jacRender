@@ -7,6 +7,7 @@
 
 #include <memory>
 
+#include "vulkan/wrapper.hpp"
 #include "vulkan/Instance.hpp"
 #include "vulkan/Window.hpp"
 #include "vulkan/Surface.hpp"
@@ -37,7 +38,7 @@ public:
         layoutInfo.bindingCount = 1;
         layoutInfo.pBindings = &uboLayoutBinding;
 
-        vkCreateDescriptorSetLayout(
+        vlk::CreateDescriptorSetLayout(
             m_device,
             &layoutInfo,
             nullptr,
@@ -47,7 +48,7 @@ public:
 
     ~DescriptorSetLayout() {
         if (m_layout != VK_NULL_HANDLE) {
-            vkDestroyDescriptorSetLayout(m_device, m_layout, nullptr);
+            vlk::DestroyDescriptorSetLayout(m_device, m_layout, nullptr);
         }
     }
 

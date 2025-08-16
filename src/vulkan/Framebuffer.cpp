@@ -35,17 +35,11 @@ Framebuffer::Framebuffer(
 
         VkFramebuffer framebuffer{VK_NULL_HANDLE};
 
-        const VkResult result = vkCreateFramebuffer(
+        vlk::CreateFramebuffer(
             m_device,
             &createInfo,
             nullptr,
             &framebuffer);
-
-        if (result != VK_SUCCESS) {
-            throw std::runtime_error(
-                std::format("Failed to create framebuffer: {}", vulkan::to_string(result))
-            );
-        }
         
         m_framebuffers.push_back(framebuffer);
     }
@@ -53,7 +47,7 @@ Framebuffer::Framebuffer(
 
 Framebuffer::~Framebuffer() {
     for (const auto& framebuffer : m_framebuffers) {
-        vkDestroyFramebuffer(m_device, framebuffer, nullptr);
+        vlk::DestroyFramebuffer(m_device, framebuffer, nullptr);
     }
 }
 

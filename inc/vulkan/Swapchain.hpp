@@ -14,6 +14,8 @@
 #include <vulkan/Surface.hpp>
 #include <vulkan/Device.hpp>
 
+#include "vulkan/wrapper.hpp"
+
 namespace vulkan {
 
 class Swapchain {
@@ -64,7 +66,7 @@ public:
     [[nodiscard]]
     auto acquireNextImage(VkSemaphore imageAvailable) -> uint32_t {
         uint32_t imageIndex;
-        const VkResult result = vkAcquireNextImageKHR(
+        vlk::AcquireNextImageKHR(
             m_device,
             m_swapchain,
             std::numeric_limits<uint64_t>::max(), // Use a very large timeout
@@ -72,12 +74,6 @@ public:
             VK_NULL_HANDLE, // No fence
             &imageIndex
         );
-
-        if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-            throw std::runtime_error(
-                std::format("Failed to acquire next image: {}", vulkan::to_string(result))
-            );
-        }
 
         if (imageIndex == VK_SUBOPTIMAL_KHR) {
             // The swapchain is still valid, but may need to be recreated

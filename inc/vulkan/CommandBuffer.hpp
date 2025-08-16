@@ -99,7 +99,7 @@ DrawNoIndex(
 {}
 
     virtual auto record(VkCommandBuffer commandBuffer) const -> void override {
-        vkCmdDraw(commandBuffer, vertex_count, instance_count, first_vertex, first_instance);
+        vlk::CmdDraw(commandBuffer, vertex_count, instance_count, first_vertex, first_instance);
     }
 
     uint32_t vertex_count;
@@ -124,7 +124,7 @@ struct CommandBuffer::DrawIndexed final : CommandBuffer::DrawCommandI {
     {}
 
     virtual auto record(VkCommandBuffer commandBuffer) const -> void override {
-        vkCmdDrawIndexed(commandBuffer, index_count, instance_count, first_index, vertex_offset, first_instance);
+        vlk::CmdDrawIndexed(commandBuffer, index_count, instance_count, first_index, vertex_offset, first_instance);
     }
 
     uint32_t index_count;

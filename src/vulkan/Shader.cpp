@@ -3,6 +3,8 @@
 #include "vulkan/utils.hpp"
 #include "common/utils.hpp"
 
+#include "vulkan/wrapper.hpp"
+
 namespace vulkan {
    
 Shader::Shader(
@@ -24,23 +26,17 @@ Shader::Shader(
     createInfo.pCode = reinterpret_cast<const uint32_t*>(
         m_code.data());
 
-    const VkResult result = vkCreateShaderModule(
+    vlk::CreateShaderModule(
         device.getDevice(),
         &createInfo,
         nullptr,
         &m_shader);
-
-    if (result != VK_SUCCESS) {
-        throw std::runtime_error(
-            std::format("Failed to create shader module: {}", vulkan::to_string(result))
-        );
-    }
 }
 
 Shader::~Shader()
 {
     if (m_shader != VK_NULL_HANDLE) {
-        vkDestroyShaderModule(
+        vlk::DestroyShaderModule(
             m_device,
             m_shader,
             nullptr);

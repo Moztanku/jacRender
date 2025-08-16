@@ -5,6 +5,7 @@
 #include <format>
 #include <set>
 
+#include "vulkan/wrapper.hpp"
 #include "vulkan/utils.hpp"
 #include "common/defs.hpp"
 
@@ -17,14 +18,14 @@ auto get_physical_device(
 ) -> VkPhysicalDevice
 {
     uint32_t deviceCount = 0;
-    vkEnumeratePhysicalDevices(instance.getInstance(), &deviceCount, nullptr);
+    vlk::EnumeratePhysicalDevices(instance.getInstance(), &deviceCount, nullptr);
 
     if (deviceCount == 0) {
         throw std::runtime_error("No Vulkan physical devices found.");
     }
 
     std::vector<VkPhysicalDevice> devices(deviceCount);
-    vkEnumeratePhysicalDevices(instance.getInstance(), &deviceCount, devices.data());
+    vlk::EnumeratePhysicalDevices(instance.getInstance(), &deviceCount, devices.data());
 
     // Get device with most memory
     VkPhysicalDevice bestDevice = VK_NULL_HANDLE;
@@ -32,7 +33,7 @@ auto get_physical_device(
 
     for (const auto& device : devices) {
         VkPhysicalDeviceMemoryProperties memoryProps;
-        vkGetPhysicalDeviceMemoryProperties(device, &memoryProps);
+        vlk::GetPhysicalDeviceMemoryProperties(device, &memoryProps);
 
         if (memoryProps.memoryHeapCount > 0 &&
             (bestDevice == VK_NULL_HANDLE ||
@@ -67,10 +68,10 @@ auto get_queue_families(
     QueueFamilyIndices indices;
 
     uint32_t queueFamilyCount{};
-    vkGetPhysicalDeviceQueueFamilyProperties(physDevice, &queueFamilyCount, nullptr);
+    vlk::GetPhysicalDeviceQueueFamilyProperties(physDevice, &queueFamilyCount, nullptr);
 
     std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-    vkGetPhysicalDeviceQueueFamilyProperties(physDevice, &queueFamilyCount, queueFamilies.data());
+    vlk::GetPhysicalDeviceQueueFamilyProperties(physDevice, &queueFamilyCount, queueFamilies.data());
 
     for (uint32_t i = 0; i < queueFamilyCount; i++) {
         const auto& queueFamily = queueFamilies[i];
@@ -80,7 +81,7 @@ auto get_queue_families(
         }
 
         VkBool32 presentSupport = false;
-        vkGetPhysicalDeviceSurfaceSupportKHR(physDevice, i, surface, &presentSupport);
+        vlk::GetPhysicalDeviceSurfaceSupportKHR(physDevice, i, surface, &presentSupport);
 
         if (presentSupport) {
             indices.presentFamily = i;
@@ -163,26 +164,21 @@ Device::Device(
         nullptr :
         extensions.data();
 
-    const VkResult result = vkCreateDevice(
+    vlk::CreateDevice(
         m_physDevice,
         &createInfo,
         nullptr,
         &m_device
     );
 
-    if (result != VK_SUCCESS) {
-        throw std::runtime_error(
-            std::format("Failed to create Vulkan device: {}", vulkan::to_string(result)));
-    }
-
-    vkGetDeviceQueue(
+    vlk::GetDeviceQueue(
         m_device,
         queueFamilies.graphicsFamily.value(),
         0,
         &m_graphicsQueue.queue);
     m_graphicsQueue.familyIndex = queueFamilies.graphicsFamily.value();
 
-    vkGetDeviceQueue(
+    vlk::GetDeviceQueue(
         m_device,
         queueFamilies.presentFamily.value(),
         0,
@@ -193,17 +189,17 @@ Device::Device(
 Device::~Device()
 {
     if (m_graphicsQueue) {
-        vkQueueWaitIdle(m_graphicsQueue.queue);
+        vlk::QueueWaitIdle(m_graphicsQueue.queue);
         m_graphicsQueue = {};
     }
 
     if (m_presentQueue) {
-        vkQueueWaitIdle(m_presentQueue.queue);
+        vlk::QueueWaitIdle(m_presentQueue.queue);
         m_presentQueue = {};
     }
 
     if (m_device != VK_NULL_HANDLE) {
-        vkDestroyDevice(m_device, nullptr);
+        vlk::DestroyDevice(m_device, nullptr);
         m_device = VK_NULL_HANDLE;
     }
     m_physDevice = VK_NULL_HANDLE;

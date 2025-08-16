@@ -3,6 +3,8 @@
 #include <stdexcept>
 #include <format>
 
+#include "vulkan/wrapper.hpp"
+
 namespace {
 
 auto create_descriptor_pool(
@@ -13,7 +15,7 @@ auto create_descriptor_pool(
         new VkDescriptorPool{VK_NULL_HANDLE},
         [device_p = device.getDevice()](VkDescriptorPool* pool) {
             if (*pool != VK_NULL_HANDLE) {
-                vkDestroyDescriptorPool(device_p, *pool, nullptr);
+                vlk::DestroyDescriptorPool(device_p, *pool, nullptr);
                 *pool = VK_NULL_HANDLE;
             }
         }
@@ -33,7 +35,7 @@ auto create_descriptor_pool(
         .pPoolSizes = &poolSize
     };
 
-    vkCreateDescriptorPool(
+    vlk::CreateDescriptorPool(
         device.getDevice(),
         &poolCreateInfo,
         nullptr,
@@ -73,7 +75,7 @@ auto DescriptorSet::Create(
     };
 
     std::vector<VkDescriptorSet> vkDescriptorSets(descriptorCount, VK_NULL_HANDLE);
-    vkAllocateDescriptorSets(
+    vlk::AllocateDescriptorSets(
         device.getDevice(),
         &allocInfo,
         vkDescriptorSets.data()
@@ -109,7 +111,7 @@ DescriptorSet::DescriptorSet(DescriptorSet&& other) :
 DescriptorSet::~DescriptorSet() {
     // Not needed unless VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT is used
     // if (m_descriptorSet != VK_NULL_HANDLE && m_descriptorPool) {
-    //     vkFreeDescriptorSets(m_device, *m_descriptorPool, 1, &m_descriptorSet);
+    //     vlk::FreeDescriptorSets(m_device, *m_descriptorPool, 1, &m_descriptorSet);
     // }
 }
     

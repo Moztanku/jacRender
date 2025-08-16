@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <limits>
 
+#include "vulkan/wrapper.hpp"
 #include "vulkan/utils.hpp"
 
 namespace {
@@ -16,14 +17,7 @@ auto get_surface_capabilities(
 ) -> VkSurfaceCapabilitiesKHR
 {
     VkSurfaceCapabilitiesKHR capabilities{};
-    const VkResult result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
-        physDevice, surface, &capabilities);
-
-    if (result != VK_SUCCESS) {
-        throw std::runtime_error(
-            std::format("Failed to get surface capabilities: {}", vulkan::to_string(result))
-        );
-    }
+    vlk::GetPhysicalDeviceSurfaceCapabilitiesKHR(physDevice, surface, &capabilities);
 
     return capabilities;
 }
@@ -35,14 +29,14 @@ auto get_surface_format(
 ) -> VkSurfaceFormatKHR
 {
     uint32_t formatCount;
-    vkGetPhysicalDeviceSurfaceFormatsKHR(physDevice, surface, &formatCount, nullptr);
+    vlk::GetPhysicalDeviceSurfaceFormatsKHR(physDevice, surface, &formatCount, nullptr);
 
     if (formatCount == 0) {
         throw std::runtime_error("No surface formats available.");
     }
 
     std::vector<VkSurfaceFormatKHR> formats(formatCount);
-    vkGetPhysicalDeviceSurfaceFormatsKHR(physDevice, surface, &formatCount, formats.data());
+    vlk::GetPhysicalDeviceSurfaceFormatsKHR(physDevice, surface, &formatCount, formats.data());
 
     // Prefer VK_FORMAT_B8G8R8A8_SRGB if available, otherwise use the first format
     for (const auto& format : formats) {
@@ -62,14 +56,14 @@ auto get_present_mode(
 ) -> VkPresentModeKHR
 {
     uint32_t presentModeCount;
-    vkGetPhysicalDeviceSurfacePresentModesKHR(physDevice, surface, &presentModeCount, nullptr);
+    vlk::GetPhysicalDeviceSurfacePresentModesKHR(physDevice, surface, &presentModeCount, nullptr);
 
     if (presentModeCount == 0) {
         throw std::runtime_error("No present modes available.");
     }
 
     std::vector<VkPresentModeKHR> presentModes(presentModeCount);
-    vkGetPhysicalDeviceSurfacePresentModesKHR(physDevice, surface, &presentModeCount, presentModes.data());
+    vlk::GetPhysicalDeviceSurfacePresentModesKHR(physDevice, surface, &presentModeCount, presentModes.data());
 
     // Prefer VK_PRESENT_MODE_MAILBOX_KHR if available, otherwise use VK_PRESENT_MODE_FIFO_KHR
     for (const auto& mode : presentModes) {
@@ -171,29 +165,23 @@ Swapchain::Swapchain(
     createInfo.clipped = VK_TRUE; // Clipping is enabled
     createInfo.oldSwapchain = VK_NULL_HANDLE; // No previous swapchain
 
-    const VkResult result = vkCreateSwapchainKHR(
+    vlk::CreateSwapchainKHR(
         m_device,
         &createInfo,
         nullptr,
         &m_swapchain
     );
 
-    if (result != VK_SUCCESS) {
-        throw std::runtime_error(
-            std::format("Failed to create Vulkan swapchain: {}", vulkan::to_string(result))
-        );
-    }
-
     // Retrieve the swapchain images
     uint32_t imageCount;
-    vkGetSwapchainImagesKHR(m_device, m_swapchain, &imageCount, nullptr);
+    vlk::GetSwapchainImagesKHR(m_device, m_swapchain, &imageCount, nullptr);
 
     if (imageCount == 0) {
         throw std::runtime_error("No swapchain images available.");
     }
 
     m_images.resize(imageCount);
-    vkGetSwapchainImagesKHR(m_device, m_swapchain, &imageCount, m_images.data());
+    vlk::GetSwapchainImagesKHR(m_device, m_swapchain, &imageCount, m_images.data());
 
     m_format = surface_format.format;
     m_extent = extent;
@@ -222,18 +210,12 @@ auto Swapchain::create_image_views() -> void
         createInfo.subresourceRange.baseArrayLayer = 0;
         createInfo.subresourceRange.layerCount = 1;
 
-        const VkResult result = vkCreateImageView(
+        vlk::CreateImageView(
             m_device,
             &createInfo,
             nullptr,
             &m_imageViews[i]
         );
-
-        if (result != VK_SUCCESS) {
-            throw std::runtime_error(
-                std::format("Failed to create image view: {}", vulkan::to_string(result))
-            );
-        }
     }
 }
 
@@ -241,13 +223,13 @@ Swapchain::~Swapchain()
 {
     for (auto imageView : m_imageViews) {
         if (imageView != VK_NULL_HANDLE) {
-            vkDestroyImageView(m_device, imageView, nullptr);
+            vlk::DestroyImageView(m_device, imageView, nullptr);
         }
     }
     m_imageViews.clear();
 
     if (m_swapchain != VK_NULL_HANDLE) {
-        vkDestroySwapchainKHR(m_device, m_swapchain, nullptr);
+        vlk::DestroySwapchainKHR(m_device, m_swapchain, nullptr);
         m_swapchain = VK_NULL_HANDLE;
     }
 }

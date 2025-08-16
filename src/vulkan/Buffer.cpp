@@ -3,6 +3,8 @@
 #include <format>
 #include <stdexcept>
 
+#include "vulkan/wrapper.hpp"
+
 using namespace detail;
 using namespace vulkan::detail;
 
@@ -23,7 +25,7 @@ auto create_buffer(
     bufferInfo.sharingMode = shared ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
 
     VkBuffer buffer{VK_NULL_HANDLE};
-    vkCreateBuffer(device, &bufferInfo, nullptr, &buffer);
+    vlk::CreateBuffer(device, &bufferInfo, nullptr, &buffer);
 
     return buffer;
 }
@@ -35,7 +37,7 @@ auto find_memory_type(
     VkMemoryPropertyFlags properties
 ) -> uint32_t {
     VkPhysicalDeviceMemoryProperties memProperties{};
-    vkGetPhysicalDeviceMemoryProperties(device, &memProperties);
+    vlk::GetPhysicalDeviceMemoryProperties(device, &memProperties);
 
     for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
         if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
@@ -54,7 +56,7 @@ auto allocate_memory(
     VkMemoryPropertyFlags properties
 ) -> VkDeviceMemory {
     VkMemoryRequirements memRequirements{};
-    vkGetBufferMemoryRequirements(device, buffer, &memRequirements);
+    vlk::GetBufferMemoryRequirements(device, buffer, &memRequirements);
 
     VkMemoryAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -66,7 +68,7 @@ auto allocate_memory(
     );
 
     VkDeviceMemory memory{VK_NULL_HANDLE};
-    vkAllocateMemory(device, &allocInfo, nullptr, &memory);
+    vlk::AllocateMemory(device, &allocInfo, nullptr, &memory);
 
     if (!memory) {
         throw std::runtime_error("Failed to allocate buffer memory");
@@ -100,10 +102,10 @@ Buffer<Type>::Buffer(
         memoryProperties
     );
 
-    vkBindBufferMemory(m_device, m_buffer, m_memory, 0);
+    vlk::BindBufferMemory(m_device, m_buffer, m_memory, 0);
 
     if constexpr (Type == BufferType::Uniform) {
-        vkMapMemory(
+        vlk::MapMemory(
             m_device,
             m_memory,
             0,
@@ -138,17 +140,17 @@ Buffer<Type>::~Buffer()
 {
     if constexpr (Type == BufferType::Uniform) {
         if (this->m_mappedData) {
-            vkUnmapMemory(m_device, m_memory);
+            vlk::UnmapMemory(m_device, m_memory);
             this->m_mappedData = nullptr;
         }
     }
 
     if (m_memory) {
-        vkFreeMemory(m_device, m_memory, nullptr);
+        vlk::FreeMemory(m_device, m_memory, nullptr);
     }
 
     if (m_buffer) {
-        vkDestroyBuffer(m_device, m_buffer, nullptr);
+        vlk::DestroyBuffer(m_device, m_buffer, nullptr);
     }
 }
 
@@ -156,7 +158,7 @@ template<>
 auto StagingBuffer::copyDataToBuffer(memory_span data) -> void
 {
     void* mappedData;
-    vkMapMemory(
+    vlk::MapMemory(
         m_device,
         m_memory,
         0,
@@ -166,7 +168,7 @@ auto StagingBuffer::copyDataToBuffer(memory_span data) -> void
     );
 
     std::memcpy(mappedData, data.data, data.size);
-    vkUnmapMemory(m_device, m_memory);
+    vlk::UnmapMemory(m_device, m_memory);
 }
 
 template<>

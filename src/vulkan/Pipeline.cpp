@@ -201,7 +201,7 @@ Pipeline::Pipeline(
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // No base pipeline (we're not recreating a pipeline)
     pipelineInfo.basePipelineIndex = -1; // No base pipeline index
 
-    const VkResult result = vkCreateGraphicsPipelines(
+    vlk::CreateGraphicsPipelines(
         m_device,
         VK_NULL_HANDLE, // No pipeline cache
         1, // We create one pipeline
@@ -209,24 +209,18 @@ Pipeline::Pipeline(
         nullptr,
         &m_graphicsPipeline
     );
-
-    if (result != VK_SUCCESS) {
-        throw std::runtime_error(
-            std::format("Failed to create graphics pipeline: {}", vulkan::to_string(result))
-        );
-    }
 }
 
 Pipeline::~Pipeline()
 {
     if (m_graphicsPipeline != VK_NULL_HANDLE) {
-        vkDestroyPipeline(m_device, m_graphicsPipeline, nullptr);
+        vlk::DestroyPipeline(m_device, m_graphicsPipeline, nullptr);
     }
     if (m_pipelineLayout != VK_NULL_HANDLE) {
-        vkDestroyPipelineLayout(m_device, m_pipelineLayout, nullptr);
+        vlk::DestroyPipelineLayout(m_device, m_pipelineLayout, nullptr);
     }
     if (m_renderPass != VK_NULL_HANDLE) {
-        vkDestroyRenderPass(m_device, m_renderPass, nullptr);
+        vlk::DestroyRenderPass(m_device, m_renderPass, nullptr);
     }
 }
 
@@ -281,18 +275,12 @@ auto Pipeline::create_render_pass(const Swapchain& swapchain) -> VkRenderPass
     renderPassInfo.dependencyCount = 1; // We have one dependency
     renderPassInfo.pDependencies = &dependency; // Pointer to the dependency
 
-    const VkResult result = vkCreateRenderPass(
+    vlk::CreateRenderPass(
         m_device,
         &renderPassInfo,
         nullptr,
         &renderPass
     );
-
-    if (result != VK_SUCCESS) {
-        throw std::runtime_error(
-            std::format("Failed to create render pass: {}", vulkan::to_string(result))
-        );
-    }
 
     return renderPass;
 }
@@ -309,18 +297,12 @@ auto Pipeline::create_pipeline_layout(VkDescriptorSetLayout descriptorSetLayout)
     pipelineLayoutInfo.pushConstantRangeCount = 0; // No push constants for now
     pipelineLayoutInfo.pPushConstantRanges = nullptr; // No push constants
 
-    const VkResult layoutResult = vkCreatePipelineLayout(
+    vlk::CreatePipelineLayout(
         m_device,
         &pipelineLayoutInfo,
         nullptr,
         &pipelineLayout
     );
-
-    if (layoutResult != VK_SUCCESS) {
-        throw std::runtime_error(
-            std::format("Failed to create pipeline layout: {}", vulkan::to_string(layoutResult))
-        );
-    }
 
     return pipelineLayout;
 }

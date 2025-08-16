@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <format>
 
+#include "vulkan/wrapper.hpp"
 #include "vulkan/utils.hpp"
 #include "common/defs.hpp"
 
@@ -16,10 +17,10 @@ namespace {
 auto check_validation_layers(const std::vector<const char*>& layers) -> bool
 {
     uint32_t layerCount;
-    vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+    vlk::EnumerateInstanceLayerProperties(&layerCount, nullptr);
 
     std::vector<VkLayerProperties> availableLayers(layerCount);
-    vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
+    vlk::EnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
 
     for (std::string_view layerName : layers) {
         bool layerFound = false;
@@ -41,10 +42,10 @@ auto check_validation_layers(const std::vector<const char*>& layers) -> bool
 auto check_required_extensions(const std::vector<const char*>& extensions) -> bool
 {
     uint32_t extensionCount;
-    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
+    vlk::EnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
 
     std::vector<VkExtensionProperties> availableExtensions(extensionCount);
-    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, availableExtensions.data());
+    vlk::EnumerateInstanceExtensionProperties(nullptr, &extensionCount, availableExtensions.data());
 
     for (std::string_view extensionName : extensions) {
         bool extensionFound = false;
@@ -60,54 +61,6 @@ auto check_required_extensions(const std::vector<const char*>& extensions) -> bo
     }
 
     return true;
-}
-
-
-[[nodiscard]]
-auto create_debug_messenger(const VkInstance instance) -> VkDebugUtilsMessengerEXT
-{
-    const auto debugCreateInfo = vulkan::get_debug_messenger_create_info();
-
-    VkDebugUtilsMessengerEXT debugMessenger{};
-
-    const auto vulkan_func = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(
-        vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT")
-    );
-
-    if (!vulkan_func) {
-        throw std::runtime_error("Failed to get vkCreateDebugUtilsMessengerEXT function.");
-    }
-
-    const VkResult result = vulkan_func(
-        instance,
-        &debugCreateInfo,
-        nullptr,
-        &debugMessenger
-    );
-
-    if (result != VK_SUCCESS) {
-        throw std::runtime_error(
-            std::format("Failed to create debug messenger: {}", vulkan::to_string(result))
-        );
-    }
-
-    return debugMessenger;
-}
-
-auto destroy_debug_messenger(
-    const VkInstance instance,
-    const VkDebugUtilsMessengerEXT debugMessenger
-) -> void
-{
-    const auto vulkan_func = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(
-        vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT")
-    );
-
-    if (!vulkan_func) {
-        throw std::runtime_error("Failed to get vkDestroyDebugUtilsMessengerEXT function.");
-    }
-
-    vulkan_func(instance, debugMessenger, nullptr);
 }
 
 auto get_required_extensions() -> std::vector<const char*>
@@ -177,28 +130,33 @@ Instance::Instance(
         &debugCreateInfo :
         nullptr;
 
-    const VkResult result = vkCreateInstance(&createInfo, nullptr, &m_instance);
-
-    if (result != VK_SUCCESS) {
-        throw std::runtime_error(
-            std::format("Failed to create Vulkan instance: {}", vulkan::to_string(result))
-        );
-    }
+    vlk::CreateInstance(&createInfo, nullptr, &m_instance);
 
     if (common::DEBUG) {
-        m_debugMessenger = create_debug_messenger(m_instance);
+        const auto create_info = vulkan::get_debug_messenger_create_info();
+
+        vlk::CreateDebugUtilsMessengerEXT(
+            m_instance,
+            &create_info,
+            nullptr,
+            &m_debugMessenger
+        );
     }
 }
 
 Instance::~Instance()
 {
     if (m_debugMessenger != VK_NULL_HANDLE) {
-        destroy_debug_messenger(m_instance, m_debugMessenger);
+        vlk::DestroyDebugUtilsMessengerEXT(
+            m_instance,
+            m_debugMessenger,
+            nullptr
+        );
         m_debugMessenger = VK_NULL_HANDLE;
     }
 
     if (m_instance != VK_NULL_HANDLE) {
-        vkDestroyInstance(m_instance, nullptr);
+        vlk::DestroyInstance(m_instance, nullptr);
         m_instance = VK_NULL_HANDLE;
     }
 }

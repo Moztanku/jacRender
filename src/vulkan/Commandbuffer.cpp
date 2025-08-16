@@ -12,7 +12,7 @@ auto create_command_pool(vulkan::Device& device) -> std::shared_ptr<VkCommandPoo
         new VkCommandPool{VK_NULL_HANDLE},
         [device_p = device.getDevice()](VkCommandPool* pool) {
             if (*pool != VK_NULL_HANDLE) {
-                vkDestroyCommandPool(device_p, *pool, nullptr);
+                vlk::DestroyCommandPool(device_p, *pool, nullptr);
                 *pool = VK_NULL_HANDLE;
             }
         }
@@ -23,17 +23,11 @@ auto create_command_pool(vulkan::Device& device) -> std::shared_ptr<VkCommandPoo
     poolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT; // Allow command buffers to be reset individually
     poolCreateInfo.queueFamilyIndex = device.getGraphicsQueue().familyIndex;
 
-    const VkResult poolResult = vkCreateCommandPool(
+    vlk::CreateCommandPool(
         device.getDevice(),
         &poolCreateInfo,
         nullptr,
         commandPool.get());
-        
-    if (poolResult != VK_SUCCESS) {
-        throw std::runtime_error(
-            std::format("Failed to create command pool: {}", vulkan::to_string(poolResult))
-        );
-    }
 
     return commandPool;
 }
@@ -55,16 +49,10 @@ CommandBuffer::CommandBuffer(
     bufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY; // We will use this command buffer
     bufferAllocateInfo.commandBufferCount = 1; // We only need one command buffer for now
 
-    const VkResult bufferResult = vkAllocateCommandBuffers(
+    vlk::AllocateCommandBuffers(
         m_device,
         &bufferAllocateInfo,
         &m_commandBuffer);
-
-    if (bufferResult != VK_SUCCESS) {
-        throw std::runtime_error(
-            std::format("Failed to allocate command buffer: {}", vulkan::to_string(bufferResult))
-        );
-    }
 }
 
 CommandBuffer::CommandBuffer(CommandBuffer&& other) :
@@ -77,12 +65,12 @@ CommandBuffer::CommandBuffer(CommandBuffer&& other) :
 
 CommandBuffer::~CommandBuffer() {
     if (m_commandBuffer != VK_NULL_HANDLE && m_commandPool) {
-        vkFreeCommandBuffers(m_device, *m_commandPool, 1, &m_commandBuffer);
+        vlk::FreeCommandBuffers(m_device, *m_commandPool, 1, &m_commandBuffer);
     }
 }
 
 auto CommandBuffer::reset() -> void {
-    vkResetCommandBuffer(m_commandBuffer, 0);
+    vlk::ResetCommandBuffer(m_commandBuffer, 0);
 }
 
 auto CommandBuffer::begin(bool oneTimeSubmit) -> void {
@@ -93,11 +81,11 @@ auto CommandBuffer::begin(bool oneTimeSubmit) -> void {
     beginInfo.pInheritanceInfo = nullptr;
 
     // TODO: wrap vulkan calls in a utility function
-    vkBeginCommandBuffer(m_commandBuffer, &beginInfo);
+    vlk::BeginCommandBuffer(m_commandBuffer, &beginInfo);
 }
 
 auto CommandBuffer::end() -> void {
-    vkEndCommandBuffer(m_commandBuffer);
+    vlk::EndCommandBuffer(m_commandBuffer);
 }
 
 auto CommandBuffer::beginRenderPass(
@@ -116,29 +104,29 @@ auto CommandBuffer::beginRenderPass(
     renderPassInfo.clearValueCount = 1;
     renderPassInfo.pClearValues = &clearValue;
 
-    vkCmdBeginRenderPass(m_commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+    vlk::CmdBeginRenderPass(m_commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 }
 
 auto CommandBuffer::endRenderPass() -> void {
-    vkCmdEndRenderPass(m_commandBuffer);
+    vlk::CmdEndRenderPass(m_commandBuffer);
 }
 
 auto CommandBuffer::bind(const Pipeline& pipeline) -> void {
-    vkCmdBindPipeline(m_commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getGraphicsPipeline());
+    vlk::CmdBindPipeline(m_commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getGraphicsPipeline());
 }
 
 auto CommandBuffer::bind(const VertexBuffer& vertexBuffer) -> void {
     VkBuffer buffers[] = {vertexBuffer.getBuffer()};
     VkDeviceSize offsets[] = {0};
-    vkCmdBindVertexBuffers(m_commandBuffer, 0, 1, buffers, offsets);
+    vlk::CmdBindVertexBuffers(m_commandBuffer, 0, 1, buffers, offsets);
 }
 
 auto CommandBuffer::bind(const IndexBuffer& indexBuffer) -> void {
-    vkCmdBindIndexBuffer(m_commandBuffer, indexBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT32);
+    vlk::CmdBindIndexBuffer(m_commandBuffer, indexBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT32);
 }
 
 auto CommandBuffer::bind(const DescriptorSet& descriptorSet, const VkPipelineLayout& pipelineLayout) -> void {
-    vkCmdBindDescriptorSets(
+    vlk::CmdBindDescriptorSets(
         m_commandBuffer,
         VK_PIPELINE_BIND_POINT_GRAPHICS,
         pipelineLayout,
@@ -150,10 +138,10 @@ auto CommandBuffer::bind(const DescriptorSet& descriptorSet, const VkPipelineLay
 }
 
 auto CommandBuffer::set(const VkViewport& viewport) -> void {
-    vkCmdSetViewport(m_commandBuffer, 0, 1, &viewport);
+    vlk::CmdSetViewport(m_commandBuffer, 0, 1, &viewport);
 }
 auto CommandBuffer::set(const VkRect2D& scissor) -> void {
-    vkCmdSetScissor(m_commandBuffer, 0, 1, &scissor);
+    vlk::CmdSetScissor(m_commandBuffer, 0, 1, &scissor);
 }
 
 auto CommandBuffer::copyBuffer(
@@ -168,7 +156,7 @@ auto CommandBuffer::copyBuffer(
     copyRegion.dstOffset = dstOffset;
     copyRegion.size = size;
     
-    vkCmdCopyBuffer(m_commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
+    vlk::CmdCopyBuffer(m_commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
 }
 
 auto CommandBuffer::record(const DrawCommandI& command) -> void {

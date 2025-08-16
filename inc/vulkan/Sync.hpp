@@ -11,6 +11,7 @@
 
 #include "vulkan/Device.hpp"
 #include "vulkan/utils.hpp"
+#include "vulkan/wrapper.hpp"
 
 namespace vulkan {
 
@@ -20,23 +21,17 @@ public:
         VkSemaphoreCreateInfo semaphoreInfo{};
         semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
-        const VkResult result = vkCreateSemaphore(
+        vlk::CreateSemaphore(
             m_device,
             &semaphoreInfo,
             nullptr,
             &m_semaphore
         );
-
-        if (result != VK_SUCCESS) {
-            throw std::runtime_error(
-                std::format("Failed to create semaphore: {}", vulkan::to_string(result))
-            );
-        }
     }
 
     ~Semaphore() {
         if (m_semaphore != VK_NULL_HANDLE) {
-            vkDestroySemaphore(m_device, m_semaphore, nullptr);
+            vlk::DestroySemaphore(m_device, m_semaphore, nullptr);
             m_semaphore = VK_NULL_HANDLE;
         }
     }
@@ -71,18 +66,12 @@ public:
         fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
         fenceInfo.flags = signaled ? VK_FENCE_CREATE_SIGNALED_BIT : 0;
 
-        const VkResult result = vkCreateFence(
+        vlk::CreateFence(
             m_device,
             &fenceInfo,
             nullptr,
             &m_fence
         );
-
-        if (result != VK_SUCCESS) {
-            throw std::runtime_error(
-                std::format("Failed to create fence: {}", vulkan::to_string(result))
-            );
-        }
     }
 
     Fence(Fence&& other) noexcept :
@@ -93,7 +82,7 @@ public:
 
     ~Fence() {
         if (m_fence != VK_NULL_HANDLE) {
-            vkDestroyFence(m_device, m_fence, nullptr);
+            vlk::DestroyFence(m_device, m_fence, nullptr);
             m_fence = VK_NULL_HANDLE;
         }
     }
@@ -113,15 +102,15 @@ public:
     }
 
     auto wait(const uint64_t timeout = UINT64_MAX) const -> VkResult {
-        return vkWaitForFences(m_device, 1, &m_fence, VK_TRUE, timeout);
+        return vlk::WaitForFences(m_device, 1, &m_fence, VK_TRUE, timeout);
     }
 
     auto reset() const -> VkResult {
-        return vkResetFences(m_device, 1, &m_fence);
+        return vlk::ResetFences(m_device, 1, &m_fence);
     }
 
     auto isSignaled() const -> bool {
-        return vkGetFenceStatus(m_device, m_fence) == VK_SUCCESS;
+        return vlk::GetFenceStatus(m_device, m_fence) == VK_SUCCESS;
     }
 
 private:

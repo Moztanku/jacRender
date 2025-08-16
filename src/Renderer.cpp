@@ -262,8 +262,6 @@ void Renderer::renderFrame() {
 
     const float seconds = static_cast<float>(millisecond_now - millisecond_start) / 1000.0f;
 
-    std::cout << seconds << "\n";
-
     static UBO ubo{};
     ubo.model = glm::rotate(
         glm::mat4(1.0f),
