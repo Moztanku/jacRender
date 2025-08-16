@@ -25,7 +25,7 @@ auto CHECK_VK_RESULT(
 
     throw std::runtime_error(
         std::format(
-            "[{}{}{}] {} {}@{}:{}{}",
+            "[{}{}{}] {} {}@ {}:{}{}",
             RED,
             vulkan::to_string(result),
             RESET,
