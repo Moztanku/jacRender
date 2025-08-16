@@ -31,12 +31,16 @@ public:
     auto reset() -> void;
 
     // Begin and end methods for command buffer recording
-    auto begin(
+    auto begin(bool oneTimeSubmit = false) -> void;
+    auto end() -> void;
+
+    // Begina and end render pass
+    auto beginRenderPass(
         const VkRenderPass&,
         const VkFramebuffer&,
         const VkExtent2D&,
         const VkClearValue& = get_default<VkClearValue>()) -> void;
-    auto end() -> void;
+    auto endRenderPass() -> void;
 
     // Bind methods for pipeline and buffers
     auto bind(const Pipeline&) -> void;
@@ -45,6 +49,14 @@ public:
 
     auto set(const VkViewport&) -> void;
     auto set(const VkRect2D&) -> void;
+
+    // Copy buffer command
+    auto copyBuffer(
+        VkBuffer srcBuffer,
+        VkBuffer dstBuffer,
+        VkDeviceSize size,
+        VkDeviceSize srcOffset = 0,
+        VkDeviceSize dstOffset = 0) -> void;
 
     // Issue draw commands
     struct DrawCommandI;

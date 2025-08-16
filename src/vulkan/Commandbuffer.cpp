@@ -85,20 +85,27 @@ auto CommandBuffer::reset() -> void {
     vkResetCommandBuffer(m_commandBuffer, 0);
 }
 
-auto CommandBuffer::begin(
-    const VkRenderPass& renderPass,
-    const VkFramebuffer& frameBuffer,
-    const VkExtent2D& extent,
-    const VkClearValue& clearValue) -> void {
+auto CommandBuffer::begin(bool oneTimeSubmit) -> void {
     VkCommandBufferBeginInfo beginInfo{};
 
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    beginInfo.flags = 0;
+    beginInfo.flags = oneTimeSubmit ? VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT : 0;
     beginInfo.pInheritanceInfo = nullptr;
 
     // TODO: wrap vulkan calls in a utility function
     vkBeginCommandBuffer(m_commandBuffer, &beginInfo);
+}
 
+auto CommandBuffer::end() -> void {
+    vkEndCommandBuffer(m_commandBuffer);
+}
+
+auto CommandBuffer::beginRenderPass(
+    const VkRenderPass& renderPass,
+    const VkFramebuffer& frameBuffer,
+    const VkExtent2D& extent,
+    const VkClearValue& clearValue
+) -> void {
     // Begin render pass
     VkRenderPassBeginInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -112,9 +119,8 @@ auto CommandBuffer::begin(
     vkCmdBeginRenderPass(m_commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 }
 
-auto CommandBuffer::end() -> void {
+auto CommandBuffer::endRenderPass() -> void {
     vkCmdEndRenderPass(m_commandBuffer);
-    vkEndCommandBuffer(m_commandBuffer);
 }
 
 auto CommandBuffer::bind(const Pipeline& pipeline) -> void {
@@ -136,6 +142,21 @@ auto CommandBuffer::set(const VkViewport& viewport) -> void {
 }
 auto CommandBuffer::set(const VkRect2D& scissor) -> void {
     vkCmdSetScissor(m_commandBuffer, 0, 1, &scissor);
+}
+
+auto CommandBuffer::copyBuffer(
+    VkBuffer srcBuffer,
+    VkBuffer dstBuffer,
+    VkDeviceSize size,
+    VkDeviceSize srcOffset,
+    VkDeviceSize dstOffset
+) -> void {
+    VkBufferCopy copyRegion{};
+    copyRegion.srcOffset = srcOffset;
+    copyRegion.dstOffset = dstOffset;
+    copyRegion.size = size;
+    
+    vkCmdCopyBuffer(m_commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
 }
 
 auto CommandBuffer::record(const DrawCommandI& command) -> void {

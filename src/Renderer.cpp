@@ -75,13 +75,66 @@ Renderer::Renderer(
     const std::vector<Vertex> vertices = {
         {{-0.5f, 0.5f}, {1.0f, 0.0f, 0.0f}}, // Bottom left
         {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},  // Bottom right
-        {{0.0f, -0.5f}, {0.0f, 0.0f, 1.0f}}    // Top center
+        {{0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}}, // Top right
+        {{-0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}} // Top left
     };
 
+    const std::vector<uint32_t> indices = {
+        0, 1, 2, // First triangle
+        2, 3, 0  // Second triangle
+    };
+
+    // TODO: Move resource management to a separate class
+    //  Mesh should hold vertex and index buffers, MemoryManager should handle model loading
+    //  and staging buffers with it
     m_vertexBuffer = std::make_unique<vulkan::VertexBuffer>(
         *m_device,
-        vertices
+        sizeof(Vertex) * vertices.size()
     );
+    m_indexBuffer = std::make_unique<vulkan::IndexBuffer>(
+        *m_device,
+        sizeof(uint32_t) * indices.size()
+    );
+
+    auto staging_buffer = vulkan::StagingBuffer{
+        *m_device,
+        sizeof(Vertex) * vertices.size()
+    };
+    staging_buffer.copyDataToBuffer(vertices);
+
+    auto staging_index_buffer = vulkan::StagingBuffer{
+        *m_device,
+        sizeof(uint32_t) * indices.size()
+    };
+    staging_index_buffer.copyDataToBuffer(indices);
+
+    auto tempCommandbuffer = vulkan::CommandBuffer(*m_device);
+    tempCommandbuffer.begin(true); // One-time submit
+    tempCommandbuffer.copyBuffer(
+        staging_buffer.getBuffer(),
+        m_vertexBuffer->getBuffer(),
+        sizeof(Vertex) * vertices.size()
+    );
+    tempCommandbuffer.copyBuffer(
+        staging_index_buffer.getBuffer(),
+        m_indexBuffer->getBuffer(),
+        sizeof(uint32_t) * indices.size()
+    );
+    tempCommandbuffer.end();
+
+    // TODO: Use separate transfer queue for staging buffers
+    VkSubmitInfo submitInfo{};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &tempCommandbuffer.getCommandBuffer();
+    vkQueueSubmit(
+        m_device->getGraphicsQueue().queue,
+        1,
+        &submitInfo,
+        VK_NULL_HANDLE // No fence
+    );
+    vkQueueWaitIdle(m_device->getGraphicsQueue().queue);
+    // Wait for the transfer to complete
 
     m_maxFramesInFlight = static_cast<uint8_t>(m_swapchain->getImageCount());
 
@@ -126,7 +179,9 @@ void Renderer::renderFrame() {
 
     // 3. Record commands into the command buffer
     m_commandBuffer.reset();
-    m_commandBuffer.begin(
+    m_commandBuffer.begin();
+
+    m_commandBuffer.beginRenderPass(
         m_pipeline->getRenderPass(),
         m_framebuffer->getFramebuffer(imageIndex),
         m_swapchain->getExtent()
@@ -135,9 +190,15 @@ void Renderer::renderFrame() {
     m_commandBuffer.set(m_swapchain->getScissor());
     m_commandBuffer.bind(*m_pipeline);
     m_commandBuffer.bind(*m_vertexBuffer);
+    m_commandBuffer.bind(*m_indexBuffer);
 
-    const auto draw_command = vulkan::CommandBuffer::DrawNoIndex{3}; // 3 vertices hardcoded for now
+    // const auto draw_command = vulkan::CommandBuffer::DrawNoIndex{3}; // 3 vertices hardcoded for now
+    const auto draw_command = vulkan::CommandBuffer::DrawIndexed{
+        6
+    };
     m_commandBuffer.record(draw_command);
+    m_commandBuffer.endRenderPass();
+
     m_commandBuffer.end();
 
     // 4. Submit the command buffer to the graphics queue (wait for the image to be available)

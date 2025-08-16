@@ -44,6 +44,7 @@ target_sources(${PROJECT_NAME}
     ${SRC_DIR}/vulkan/Pipeline.cpp
     ${SRC_DIR}/vulkan/Framebuffer.cpp
     ${SRC_DIR}/vulkan/Commandbuffer.cpp
+    ${SRC_DIR}/vulkan/Buffer.cpp
     ${SRC_DIR}/vulkan/utils.cpp
     # Renderer related
     ${SRC_DIR}/Renderer.cpp)
