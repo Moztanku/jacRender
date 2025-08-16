@@ -72,11 +72,11 @@ CommandBuffer::CommandBuffer(CommandBuffer&& other) :
     m_device(other.m_device),
     m_commandPool(std::move(other.m_commandPool))
 {
-    other.m_commandBuffer = VK_NULL_HANDLE; // Invalidate the moved-from object
+    other.m_commandBuffer = VK_NULL_HANDLE;
 }
 
 CommandBuffer::~CommandBuffer() {
-    if (m_commandBuffer != VK_NULL_HANDLE) {
+    if (m_commandBuffer != VK_NULL_HANDLE && m_commandPool) {
         vkFreeCommandBuffers(m_device, *m_commandPool, 1, &m_commandBuffer);
     }
 }
@@ -135,6 +135,18 @@ auto CommandBuffer::bind(const VertexBuffer& vertexBuffer) -> void {
 
 auto CommandBuffer::bind(const IndexBuffer& indexBuffer) -> void {
     vkCmdBindIndexBuffer(m_commandBuffer, indexBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT32);
+}
+
+auto CommandBuffer::bind(const DescriptorSet& descriptorSet, const VkPipelineLayout& pipelineLayout) -> void {
+    vkCmdBindDescriptorSets(
+        m_commandBuffer,
+        VK_PIPELINE_BIND_POINT_GRAPHICS,
+        pipelineLayout,
+        0,
+        1,
+        &descriptorSet.getDescriptorSet(),
+        0,
+        nullptr);
 }
 
 auto CommandBuffer::set(const VkViewport& viewport) -> void {

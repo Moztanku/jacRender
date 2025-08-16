@@ -38,6 +38,10 @@ struct memory_span {
     }
 
     template<typename T>
+    constexpr memory_span(const T* ptr, size_t bytes) noexcept
+    : data(reinterpret_cast<const std::byte*>(ptr)), size(bytes) {}
+
+    template<typename T>
     constexpr memory_span(std::span<T> span) noexcept
     : data(reinterpret_cast<const std::byte*>(span.data())), size(span.size_bytes()) {}
 
@@ -53,63 +57,86 @@ struct memory_span {
 
 namespace vulkan {
 
+namespace detail {
+
 enum class BufferType : uint8_t {
     Vertex,
     Index,
-    Staging
+    Staging,
+    Uniform
 };
 
 template<BufferType Type>
-struct BufferTypeTraits;
+struct BufferBase;
 
 // TODO: consider making DestinationBuffer/ViewBuffer to omit the need for VK_BUFFER_USAGE_TRANSFER_DST_BIT
 template<>
-struct BufferTypeTraits<BufferType::Vertex> {
-    using DataType = Vertex;
+struct BufferBase<BufferType::Vertex> {
     constexpr static auto USAGE =
         VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+    constexpr static auto MEMORY_PROPERTY =
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 };
 
 template<>
-struct BufferTypeTraits<BufferType::Index> {
-    using DataType = uint32_t;
+struct BufferBase<BufferType::Index> {
     constexpr static auto USAGE = 
         VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+    constexpr static auto MEMORY_PROPERTY =
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 };
 
 template<>
-struct BufferTypeTraits<BufferType::Staging> {
-    using DataType = std::byte;
+struct BufferBase<BufferType::Staging> {
     constexpr static auto USAGE =
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+    constexpr static auto MEMORY_PROPERTY =
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 };
 
-template<BufferType Type>
-class Buffer {
-    using DataType = BufferTypeTraits<Type>::DataType;
-    constexpr static auto USAGE = BufferTypeTraits<Type>::USAGE;
+template<>
+struct BufferBase<BufferType::Uniform> {
+    constexpr static auto USAGE =
+        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+    constexpr static auto MEMORY_PROPERTY =
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+
+    void* m_mappedData{nullptr};
+};
+
+} // namespace detail
+
+template<detail::BufferType Type>
+class Buffer : detail::BufferBase<Type> {
+    using BufferBase = detail::BufferBase<Type>;
+    using BufferBase::USAGE;
+    using BufferBase::MEMORY_PROPERTY;
+
+    constexpr static bool WRITABLE =
+        Type == detail::BufferType::Staging || Type == detail::BufferType::Uniform;
 public:
     Buffer(Device& device, VkDeviceSize bufferSize);
+    Buffer(Buffer&& other) noexcept;
     ~Buffer();
 
     Buffer(const Buffer&) = delete;
     Buffer& operator=(const Buffer&) = delete;
-    Buffer(Buffer&&) = delete;
     Buffer& operator=(Buffer&&) = delete;
 
     [[nodiscard]]
     auto getBuffer() const noexcept -> VkBuffer { return m_buffer; }
         
-    auto copyDataToBuffer(detail::memory_span data) -> void
-        requires (Type == BufferType::Staging);
+    auto copyDataToBuffer(::detail::memory_span data) -> void
+        requires WRITABLE;
 private:
     VkBuffer m_buffer{VK_NULL_HANDLE};
     VkDeviceMemory m_memory{VK_NULL_HANDLE};
     const VkDevice m_device{VK_NULL_HANDLE};
 };
 
-using VertexBuffer = Buffer<BufferType::Vertex>;
-using IndexBuffer = Buffer<BufferType::Index>;
-using StagingBuffer = Buffer<BufferType::Staging>;
+using VertexBuffer = Buffer<detail::BufferType::Vertex>;
+using IndexBuffer = Buffer<detail::BufferType::Index>;
+using StagingBuffer = Buffer<detail::BufferType::Staging>;
+using UniformBuffer = Buffer<detail::BufferType::Uniform>;
 
 } // namespace vulkan

@@ -2,7 +2,14 @@
 
 #include <stdexcept>
 #include <format>
+#include <chrono>
 
+#define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
+#define GLM_FORCE_RADIANS
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
+#include "UBO.hpp"
 #include "common/defs.hpp"
 #include "vulkan/utils.hpp"
 #include "vulkan/Shader.hpp"
@@ -57,12 +64,21 @@ Renderer::Renderer(
         *m_surface,
         m_window
     );
+    m_maxFramesInFlight = static_cast<uint8_t>(m_swapchain->getImageCount());
+
+    m_descriptorSetLayout = std::make_unique<DescriptorSetLayout>(*m_device);
+    m_descriptorSets = vulkan::DescriptorSet::Create(
+        *m_device,
+        m_descriptorSetLayout->getLayout(),
+        m_maxFramesInFlight
+    );
 
     const auto shaders = get_default_shaders(*m_device);
     m_pipeline = std::make_unique<vulkan::Pipeline>(
         *m_device,
         *m_swapchain,
-        shaders
+        shaders,
+        m_descriptorSetLayout->getLayout()
     );
 
     m_framebuffer = std::make_unique<vulkan::Framebuffer>(
@@ -136,8 +152,41 @@ Renderer::Renderer(
     vkQueueWaitIdle(m_device->getGraphicsQueue().queue);
     // Wait for the transfer to complete
 
-    m_maxFramesInFlight = static_cast<uint8_t>(m_swapchain->getImageCount());
+    // Create uniform buffers
+    m_uniformBuffers.reserve(m_maxFramesInFlight);
 
+    for (uint8_t i = 0; i < m_maxFramesInFlight; ++i) {
+        m_uniformBuffers.emplace_back(
+            *m_device,
+            sizeof(UBO)
+        );
+    }
+
+    for (size_t i = 0; i < m_maxFramesInFlight; i++) {
+        VkDescriptorBufferInfo bufferInfo{};
+        bufferInfo.buffer = m_uniformBuffers[i].getBuffer();
+        bufferInfo.offset = 0;
+        bufferInfo.range = sizeof(UBO);
+
+        VkWriteDescriptorSet descriptorWrite{};
+        descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrite.dstSet = m_descriptorSets[i].getDescriptorSet();
+        descriptorWrite.dstBinding = 0;
+        descriptorWrite.dstArrayElement = 0;
+        descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        descriptorWrite.descriptorCount = 1;
+        descriptorWrite.pBufferInfo = &bufferInfo;
+
+        vkUpdateDescriptorSets(
+            m_device->getDevice(),
+            1,
+            &descriptorWrite,
+            0,
+            nullptr
+        );
+    }
+
+    // Create command buffers for rendering
     m_commandBuffersVec.reserve(m_maxFramesInFlight);
     m_commandBuffersVec.emplace_back(*m_device);
     const auto& command_pool = m_commandBuffersVec.back().getCommandPool();
@@ -191,6 +240,7 @@ void Renderer::renderFrame() {
     m_commandBuffer.bind(*m_pipeline);
     m_commandBuffer.bind(*m_vertexBuffer);
     m_commandBuffer.bind(*m_indexBuffer);
+    m_commandBuffer.bind(m_descriptorSets[m_currentFrame], m_pipeline->getPipelineLayout());
 
     // const auto draw_command = vulkan::CommandBuffer::DrawNoIndex{3}; // 3 vertices hardcoded for now
     const auto draw_command = vulkan::CommandBuffer::DrawIndexed{
@@ -200,6 +250,44 @@ void Renderer::renderFrame() {
     m_commandBuffer.endRenderPass();
 
     m_commandBuffer.end();
+
+    // 3.5 Update uniform buffer for the current frame
+    static uint64_t millisecond_start = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::system_clock::now().time_since_epoch()
+    ).count();
+
+    const uint64_t millisecond_now = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::system_clock::now().time_since_epoch()
+    ).count();
+
+    const float seconds = static_cast<float>(millisecond_now - millisecond_start) / 1000.0f;
+
+    std::cout << seconds << "\n";
+
+    static UBO ubo{};
+    ubo.model = glm::rotate(
+        glm::mat4(1.0f),
+        seconds * glm::radians(90.0f),
+        glm::vec3(0.0f, 0.0f, 1.0f)
+    );
+
+    ubo.view = glm::lookAt(
+        glm::vec3(2.0f, 2.0f, 2.0f),
+        glm::vec3(0.0f, 0.0f, 0.0f),
+        glm::vec3(0.0f, 1.0f, 0.0f)
+    );
+
+    ubo.proj = glm::perspective(
+        glm::radians(45.0f),
+        static_cast<float>(m_swapchain->getExtent().width) / static_cast<float>(m_swapchain->getExtent().height),
+        0.1f,
+        10.0f
+    );
+    ubo.proj[1][1] *= -1; // Vulkan uses a different coordinate system
+
+    m_uniformBuffers[m_currentFrame].copyDataToBuffer(
+        {&ubo, sizeof(ubo)}
+    );
 
     // 4. Submit the command buffer to the graphics queue (wait for the image to be available)
     VkSubmitInfo submitInfo{};

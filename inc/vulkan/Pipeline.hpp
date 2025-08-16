@@ -20,7 +20,8 @@ public:
     Pipeline(
         Device& device,
         const Swapchain& swapchain,
-        const std::vector<Shader>& shaders);
+        const std::vector<Shader>& shaders,
+        VkDescriptorSetLayout descriptorSetLayout);
     ~Pipeline();
 
     Pipeline(const Pipeline&) = delete;
@@ -33,6 +34,9 @@ public:
 
     [[nodiscard]]
     auto getGraphicsPipeline() const noexcept -> const VkPipeline& { return m_graphicsPipeline; }
+
+    [[nodiscard]]
+    auto getPipelineLayout() const noexcept -> const VkPipelineLayout& { return m_pipelineLayout; }
 private:
     VkRenderPass m_renderPass{VK_NULL_HANDLE};
     VkPipelineLayout m_pipelineLayout{VK_NULL_HANDLE};
@@ -42,7 +46,7 @@ private:
     [[nodiscard]]
     auto create_render_pass(const Swapchain& swapchain) -> VkRenderPass;
     [[nodiscard]]
-    auto create_pipeline_layout() -> VkPipelineLayout;
+    auto create_pipeline_layout(VkDescriptorSetLayout descriptorSetLayout) -> VkPipelineLayout;
 };
 
 } // namespace vulkan

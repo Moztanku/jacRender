@@ -1,5 +1,5 @@
 /**
- * Vertex.hpp
+ * @file Vertex.hpp
  * @brief Header file for the Vertex structure, which represents a basic vertex with position and color attributes.
  */
 #pragma once

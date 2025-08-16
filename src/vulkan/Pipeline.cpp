@@ -50,7 +50,8 @@ namespace vulkan {
 Pipeline::Pipeline(
     Device& device,
     const Swapchain& swapchain,
-    const std::vector<Shader>& shaders) :
+    const std::vector<Shader>& shaders,
+    VkDescriptorSetLayout descriptorSetLayout) :
     m_device{device.getDevice()}
 {
     if (shaders.empty()) {
@@ -60,7 +61,7 @@ Pipeline::Pipeline(
     // Create the render pass and pipeline layout
     // These are essential for the graphics pipeline to function
     m_renderPass = create_render_pass(swapchain);
-    m_pipelineLayout = create_pipeline_layout();
+    m_pipelineLayout = create_pipeline_layout(descriptorSetLayout);
 
     // Get the shader stages, which are the entry points for the shaders in our pipeline
     const auto shaderStages = create_shader_stages(shaders);
@@ -125,7 +126,7 @@ Pipeline::Pipeline(
     rasterizer.lineWidth = 1.0f; // Default line width
 
     rasterizer.cullMode = VK_CULL_MODE_BACK_BIT; // Cull back faces
-    rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE; // Counter-clockwise is front
+    rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE; // Counter-clockwise is front
 
     rasterizer.depthBiasEnable = VK_FALSE; // No depth bias
     rasterizer.depthBiasConstantFactor = 0.0f; // No depth bias constant
@@ -296,15 +297,15 @@ auto Pipeline::create_render_pass(const Swapchain& swapchain) -> VkRenderPass
     return renderPass;
 }
 
-auto Pipeline::create_pipeline_layout() -> VkPipelineLayout
+auto Pipeline::create_pipeline_layout(VkDescriptorSetLayout descriptorSetLayout) -> VkPipelineLayout
 {
     VkPipelineLayout pipelineLayout{VK_NULL_HANDLE};
 
     // Setup the pipeline layout, which describes the resources used by the pipeline
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 0; // No descriptor sets for now
-    pipelineLayoutInfo.pSetLayouts = nullptr; // No descriptor sets
+    pipelineLayoutInfo.setLayoutCount = 1;
+    pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
     pipelineLayoutInfo.pushConstantRangeCount = 0; // No push constants for now
     pipelineLayoutInfo.pPushConstantRanges = nullptr; // No push constants
 

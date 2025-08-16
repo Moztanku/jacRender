@@ -12,11 +12,57 @@
 #include "vulkan/Surface.hpp"
 #include "vulkan/Device.hpp"
 #include "vulkan/Swapchain.hpp"
+#include "vulkan/DescriptorSet.hpp"
 #include "vulkan/Pipeline.hpp"
 #include "vulkan/Framebuffer.hpp"
 #include "vulkan/CommandBuffer.hpp"
 #include "vulkan/Sync.hpp"
 #include "vulkan/Buffer.hpp"
+
+class DescriptorSetLayout {
+public:
+    DescriptorSetLayout(vulkan::Device& device) :
+        m_device{device.getDevice()}
+    {
+        VkDescriptorSetLayoutBinding uboLayoutBinding{};
+        uboLayoutBinding.binding = 0;
+        uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        uboLayoutBinding.descriptorCount = 1;
+
+        uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+        uboLayoutBinding.pImmutableSamplers = nullptr; // Optional
+
+        VkDescriptorSetLayoutCreateInfo layoutInfo{};
+        layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        layoutInfo.bindingCount = 1;
+        layoutInfo.pBindings = &uboLayoutBinding;
+
+        vkCreateDescriptorSetLayout(
+            m_device,
+            &layoutInfo,
+            nullptr,
+            &m_layout
+        );
+    }
+
+    ~DescriptorSetLayout() {
+        if (m_layout != VK_NULL_HANDLE) {
+            vkDestroyDescriptorSetLayout(m_device, m_layout, nullptr);
+        }
+    }
+
+    DescriptorSetLayout(const DescriptorSetLayout&) = delete;
+    DescriptorSetLayout& operator=(const DescriptorSetLayout&) = delete;
+    DescriptorSetLayout(DescriptorSetLayout&&) = delete;
+    DescriptorSetLayout& operator=(DescriptorSetLayout&&) = delete;
+
+    [[nodiscard]]
+    auto getLayout() const noexcept -> VkDescriptorSetLayout { return m_layout; }
+
+private:
+    VkDescriptorSetLayout m_layout{VK_NULL_HANDLE};
+    const VkDevice m_device{VK_NULL_HANDLE};
+};
 
 class Renderer {
 public:
@@ -48,14 +94,21 @@ private:
     std::unique_ptr<vulkan::Surface> m_surface{};
     std::unique_ptr<vulkan::Device> m_device{};
     std::unique_ptr<vulkan::Swapchain> m_swapchain{};
+    std::unique_ptr<DescriptorSetLayout> m_descriptorSetLayout{};
+    std::vector<vulkan::DescriptorSet> m_descriptorSets{};
     std::unique_ptr<vulkan::Pipeline> m_pipeline{};
     std::unique_ptr<vulkan::Framebuffer> m_framebuffer{};
 
     std::unique_ptr<vulkan::VertexBuffer> m_vertexBuffer{};
     std::unique_ptr<vulkan::IndexBuffer> m_indexBuffer{};
+    std::vector<vulkan::UniformBuffer> m_uniformBuffers{};
 
     std::vector<vulkan::CommandBuffer> m_commandBuffersVec{};
     std::vector<vulkan::Semaphore> m_imageAvailableVec{};
     std::vector<vulkan::Semaphore> m_renderFinishedVec{};
     std::vector<vulkan::Fence> m_inFlightVec{};
+
+    // TODO: Refactor away
+    // VkDescriptorSetLayout m_descriptorSetLayout{VK_NULL_HANDLE};
+    // std::unique_ptr<VkDescriptorSetLayout> m_descriptorSetLayout{nullptr};
 };

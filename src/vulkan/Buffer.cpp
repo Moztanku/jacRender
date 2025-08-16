@@ -3,6 +3,9 @@
 #include <format>
 #include <stdexcept>
 
+using namespace detail;
+using namespace vulkan::detail;
+
 namespace {
 
 [[nodiscard]]
@@ -88,10 +91,7 @@ Buffer<Type>::Buffer(
         bufferSize,
         USAGE);
 
-    constexpr VkMemoryPropertyFlags memoryProperties =
-        Type == BufferType::Staging ?
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT :
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+    constexpr VkMemoryPropertyFlags memoryProperties = MEMORY_PROPERTY;
 
     m_memory = allocate_memory(
         m_device,
@@ -101,11 +101,48 @@ Buffer<Type>::Buffer(
     );
 
     vkBindBufferMemory(m_device, m_buffer, m_memory, 0);
+
+    if constexpr (Type == BufferType::Uniform) {
+        vkMapMemory(
+            m_device,
+            m_memory,
+            0,
+            bufferSize,
+            0,
+            &this->m_mappedData
+        );
+
+        if (!this->m_mappedData) {
+            throw std::runtime_error("Failed to map uniform buffer memory");
+        }
+    }
+}
+
+template<BufferType Type>
+Buffer<Type>::Buffer(Buffer&& other) noexcept :
+    m_buffer(other.m_buffer),
+    m_memory(other.m_memory),
+    m_device(other.m_device)
+{
+    other.m_buffer = VK_NULL_HANDLE;
+    other.m_memory = VK_NULL_HANDLE;
+
+    if constexpr (Type == BufferType::Uniform) {
+        this->m_mappedData = other.m_mappedData;
+        other.m_mappedData = nullptr;
+    }
 }
 
 template<BufferType Type>
 Buffer<Type>::~Buffer()
 {
+    if constexpr (Type == BufferType::Uniform) {
+        if (this->m_mappedData) {
+            vkUnmapMemory(m_device, m_memory);
+            this->m_mappedData = nullptr;
+        }
+    }
+
     if (m_memory) {
         vkFreeMemory(m_device, m_memory, nullptr);
     }
@@ -116,7 +153,7 @@ Buffer<Type>::~Buffer()
 }
 
 template<>
-auto StagingBuffer::copyDataToBuffer(detail::memory_span data) -> void
+auto StagingBuffer::copyDataToBuffer(memory_span data) -> void
 {
     void* mappedData;
     vkMapMemory(
@@ -132,8 +169,19 @@ auto StagingBuffer::copyDataToBuffer(detail::memory_span data) -> void
     vkUnmapMemory(m_device, m_memory);
 }
 
+template<>
+auto UniformBuffer::copyDataToBuffer(memory_span data) -> void
+{
+    if (!this->m_mappedData) {
+        throw std::runtime_error("Uniform buffer memory is not mapped");
+    }
+
+    std::memcpy(this->m_mappedData, data.data, data.size);
+}
+
 template class Buffer<BufferType::Vertex>;
 template class Buffer<BufferType::Index>;
 template class Buffer<BufferType::Staging>;
+template class Buffer<BufferType::Uniform>;
 
 } // namespace vulkan

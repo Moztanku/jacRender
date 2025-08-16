@@ -40,6 +40,7 @@ target_sources(${PROJECT_NAME}
     ${SRC_DIR}/vulkan/Surface.cpp
     ${SRC_DIR}/vulkan/Device.cpp
     ${SRC_DIR}/vulkan/Swapchain.cpp
+    ${SRC_DIR}/vulkan/DescriptorSet.cpp
     ${SRC_DIR}/vulkan/Shader.cpp
     ${SRC_DIR}/vulkan/Pipeline.cpp
     ${SRC_DIR}/vulkan/Framebuffer.cpp

@@ -12,7 +12,7 @@
 #include "vulkan/Device.hpp"
 #include "vulkan/Pipeline.hpp"
 #include "vulkan/Buffer.hpp"
-
+#include "vulkan/DescriptorSet.hpp"
 namespace vulkan {
 
 class CommandBuffer {
@@ -46,6 +46,7 @@ public:
     auto bind(const Pipeline&) -> void;
     auto bind(const VertexBuffer&) -> void;
     auto bind(const IndexBuffer&) -> void;
+    auto bind(const DescriptorSet&, const VkPipelineLayout&) -> void;
 
     auto set(const VkViewport&) -> void;
     auto set(const VkRect2D&) -> void;
