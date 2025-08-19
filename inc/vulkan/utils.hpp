@@ -5,7 +5,10 @@
 #pragma once
 
 #include <vulkan/vulkan.h>
+#include <vector>
 #include <map>
+
+#include "common/defs.hpp"
 
 namespace vulkan {
 
@@ -32,5 +35,8 @@ auto get_default<VkClearValue>() noexcept -> VkClearValue {
         .color = {{0.0f, 0.0f, 0.0f, 1.0f}} // Default clear color to black
     };
 }
+
+[[nodiscard]]
+auto get_default_validation_layers() noexcept -> std::vector<const char*>;
 
 } // namespace vulkan

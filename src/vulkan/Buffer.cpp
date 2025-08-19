@@ -154,31 +154,30 @@ Buffer<Type>::~Buffer()
     }
 }
 
-template<>
-auto StagingBuffer::copyDataToBuffer(memory_span data) -> void
+template<BufferType Type>
+auto Buffer<Type>::copyDataToBuffer(memory_span data) -> void
+    requires WRITABLE
 {
-    void* mappedData;
-    vlk::MapMemory(
-        m_device,
-        m_memory,
-        0,
-        data.size,
-        0,
-        &mappedData
-    );
+    if constexpr (Type == BufferType::Staging) {
+        void* mappedData;
+        vlk::MapMemory(
+            m_device,
+            m_memory,
+            0,
+            data.size,
+            0,
+            &mappedData
+        );
 
-    std::memcpy(mappedData, data.data, data.size);
-    vlk::UnmapMemory(m_device, m_memory);
-}
+        std::memcpy(mappedData, data.data, data.size);
+        vlk::UnmapMemory(m_device, m_memory);
+    } else if constexpr (Type == BufferType::Uniform) {
+        if (!this->m_mappedData) {
+            throw std::runtime_error("Uniform buffer memory is not mapped");
+        }
 
-template<>
-auto UniformBuffer::copyDataToBuffer(memory_span data) -> void
-{
-    if (!this->m_mappedData) {
-        throw std::runtime_error("Uniform buffer memory is not mapped");
+        std::memcpy(this->m_mappedData, data.data, data.size);
     }
-
-    std::memcpy(this->m_mappedData, data.data, data.size);
 }
 
 template class Buffer<BufferType::Vertex>;

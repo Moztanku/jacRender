@@ -1,5 +1,6 @@
 #include "vulkan/Device.hpp"
 
+#include <print>
 #include <stdexcept>
 #include <vector>
 #include <format>
@@ -53,11 +54,15 @@ auto get_physical_device(
 struct QueueFamilyIndices {
     std::optional<uint32_t> graphicsFamily{std::nullopt};
     std::optional<uint32_t> presentFamily{std::nullopt};
+    std::optional<uint32_t> uniqueTransferFamily{std::nullopt};
 };
 
 [[nodiscard]]
 auto is_complete(const QueueFamilyIndices& indices) -> bool {
-    return indices.graphicsFamily.has_value() && indices.presentFamily.has_value();
+    return 
+        indices.graphicsFamily.has_value() &&
+        indices.presentFamily.has_value() &&
+        indices.uniqueTransferFamily.has_value();
 }
 
 [[nodiscard]]
@@ -77,14 +82,22 @@ auto get_queue_families(
         const auto& queueFamily = queueFamilies[i];
 
         if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
-            indices.graphicsFamily = i;
+            if (!indices.graphicsFamily.has_value()) {
+                indices.graphicsFamily = i;
+            }
+        } else if (queueFamily.queueFlags & VK_QUEUE_TRANSFER_BIT) {
+            if (!indices.uniqueTransferFamily.has_value()) {
+                indices.uniqueTransferFamily = i;
+            }
         }
 
         VkBool32 presentSupport = false;
         vlk::GetPhysicalDeviceSurfaceSupportKHR(physDevice, i, surface, &presentSupport);
 
         if (presentSupport) {
-            indices.presentFamily = i;
+            if (!indices.presentFamily.has_value()) {
+                indices.presentFamily = i;
+            }
         }
 
         if (is_complete(indices)) {
@@ -107,7 +120,8 @@ auto get_queue_create_infos(
 
     std::set<uint32_t> uniqueQueueFamilies = {
         indices.graphicsFamily.value(),
-        indices.presentFamily.value()
+        indices.presentFamily.value(),
+        indices.uniqueTransferFamily.value()
     };
 
     static const float QUEUE_PRIORITY = 1.0f;
@@ -184,6 +198,13 @@ Device::Device(
         0,
         &m_presentQueue.queue);
     m_presentQueue.familyIndex = queueFamilies.presentFamily.value();
+
+    vlk::GetDeviceQueue(
+        m_device,
+        queueFamilies.uniqueTransferFamily.value(),
+        0,
+        &m_transferQueue.queue);
+    m_transferQueue.familyIndex = queueFamilies.uniqueTransferFamily.value();
 }
 
 Device::~Device()

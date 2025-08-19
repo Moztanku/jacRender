@@ -7,6 +7,10 @@
 
 #include <memory>
 
+#include "MemoryManager.hpp"
+
+#include "wrapper/CommandPool.hpp"
+
 #include "vulkan/wrapper.hpp"
 #include "vulkan/Instance.hpp"
 #include "vulkan/Window.hpp"
@@ -17,8 +21,9 @@
 #include "vulkan/Pipeline.hpp"
 #include "vulkan/Framebuffer.hpp"
 #include "vulkan/CommandBuffer.hpp"
-#include "vulkan/Sync.hpp"
+#include "wrapper/Sync.hpp"
 #include "vulkan/Buffer.hpp"
+#include "vulkan/Texture.hpp"
 
 class DescriptorSetLayout {
 public:
@@ -86,30 +91,27 @@ public:
     auto recreateSwapchain() -> void;
 
 private:
-    // TODO: Make this configurable
-    uint8_t m_currentFrame{0};
-    uint8_t m_maxFramesInFlight{0}; // Will be set based on swapchain, add option to limit later
-
     vulkan::Window& m_window;
-    std::unique_ptr<vulkan::Instance> m_instance{};
-    std::unique_ptr<vulkan::Surface> m_surface{};
-    std::unique_ptr<vulkan::Device> m_device{};
-    std::unique_ptr<vulkan::Swapchain> m_swapchain{};
-    std::unique_ptr<DescriptorSetLayout> m_descriptorSetLayout{};
-    std::vector<vulkan::DescriptorSet> m_descriptorSets{};
-    std::unique_ptr<vulkan::Pipeline> m_pipeline{};
-    std::unique_ptr<vulkan::Framebuffer> m_framebuffer{};
+    vulkan::Instance m_instance;
+    vulkan::Surface m_surface;
+    vulkan::Device m_device;
+    vulkan::Swapchain m_swapchain;
 
+    uint8_t m_currentFrame{0};
+    const uint8_t m_maxFramesInFlight{0};
+
+    DescriptorSetLayout m_descriptorSetLayout;
+    std::vector<vulkan::DescriptorSet> m_descriptorSets;
+    vulkan::Pipeline m_pipeline;
+    vulkan::Framebuffer m_framebuffer;
+
+    std::unique_ptr<vulkan::Texture> m_texture{};
     std::unique_ptr<vulkan::VertexBuffer> m_vertexBuffer{};
     std::unique_ptr<vulkan::IndexBuffer> m_indexBuffer{};
     std::vector<vulkan::UniformBuffer> m_uniformBuffers{};
 
     std::vector<vulkan::CommandBuffer> m_commandBuffersVec{};
-    std::vector<vulkan::Semaphore> m_imageAvailableVec{};
-    std::vector<vulkan::Semaphore> m_renderFinishedVec{};
-    std::vector<vulkan::Fence> m_inFlightVec{};
-
-    // TODO: Refactor away
-    // VkDescriptorSetLayout m_descriptorSetLayout{VK_NULL_HANDLE};
-    // std::unique_ptr<VkDescriptorSetLayout> m_descriptorSetLayout{nullptr};
+    std::vector<wrapper::Semaphore> m_imageAvailableVec{};
+    std::vector<wrapper::Semaphore> m_renderFinishedVec{};
+    std::vector<wrapper::Fence> m_inFlightVec{};
 };

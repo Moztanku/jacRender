@@ -26,6 +26,27 @@ find_package(Vulkan REQUIRED)
 find_package(glfw3 REQUIRED)
 find_package(glm REQUIRED)
 
+# Fetch external dependencies
+include(FetchContent)
+
+# VulkanMemoryAllocator
+FetchContent_Declare(
+    VulkanMemoryAllocator
+    GIT_REPOSITORY https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
+    GIT_TAG v3.1.0)
+FetchContent_MakeAvailable(VulkanMemoryAllocator)
+
+# stb_image - header-only library
+FetchContent_Declare(
+    stb
+    GIT_REPOSITORY https://github.com/nothings/stb.git
+    GIT_TAG master)
+FetchContent_MakeAvailable(stb)
+
+# Create an interface library for stb
+add_library(stb INTERFACE)
+target_include_directories(stb INTERFACE ${stb_SOURCE_DIR})
+
 # Main executable
 add_executable(${PROJECT_NAME})
 
@@ -34,6 +55,8 @@ target_sources(${PROJECT_NAME}
     ${SRC_DIR}/main.cpp
     # utilities
     ${SRC_DIR}/common/utils.cpp
+    # VMA implementation
+    ${SRC_DIR}/wrapper/vma.cpp
     # Vulkan wrappers
     ${SRC_DIR}/vulkan/Window.cpp
     ${SRC_DIR}/vulkan/Instance.cpp
@@ -45,11 +68,14 @@ target_sources(${PROJECT_NAME}
     ${SRC_DIR}/vulkan/Pipeline.cpp
     ${SRC_DIR}/vulkan/Framebuffer.cpp
     ${SRC_DIR}/vulkan/Commandbuffer.cpp
+    ${SRC_DIR}/wrapper/CommandPool.cpp
+    ${SRC_DIR}/wrapper/CommandBuffer.cpp
     ${SRC_DIR}/vulkan/Buffer.cpp
     ${SRC_DIR}/vulkan/utils.cpp
     ${SRC_DIR}/vulkan/wrapper.cpp
     # Renderer related
-    ${SRC_DIR}/Renderer.cpp)
+    ${SRC_DIR}/Renderer.cpp
+    ${SRC_DIR}/MemoryManager.cpp)
 
 target_include_directories(${PROJECT_NAME}
     PRIVATE
@@ -59,7 +85,9 @@ target_link_libraries(${PROJECT_NAME}
     PRIVATE
     Vulkan::Vulkan
     glfw
-    glm)
+    glm
+    stb
+    VulkanMemoryAllocator)
 
 target_compile_options(${PROJECT_NAME}
     PRIVATE
@@ -71,5 +99,6 @@ add_subdirectory(shaders)
 target_compile_definitions(${PROJECT_NAME}
     PRIVATE
     SHADER_DIR_BASE="${CMAKE_CURRENT_SOURCE_DIR}/shaders/"
+    TEXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/textures/"
 )
 add_dependencies(${PROJECT_NAME} shaders)

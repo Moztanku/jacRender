@@ -11,16 +11,9 @@
 #include "vulkan/Instance.hpp"
 #include "vulkan/Surface.hpp"
 
+#include "wrapper/Queue.hpp"
+
 namespace vulkan {
-
-struct Queue {
-    VkQueue queue{VK_NULL_HANDLE};
-    uint32_t familyIndex{0};
-
-    operator bool() const noexcept {
-        return queue != VK_NULL_HANDLE;
-    }
-};
 
 class Device {
 public:
@@ -44,16 +37,20 @@ public:
     auto getPhysicalDevice() noexcept -> VkPhysicalDevice { return m_physDevice; }
 
     [[nodiscard]]
-    auto getGraphicsQueue() const noexcept -> const Queue& { return m_graphicsQueue; }
+    auto getGraphicsQueue() noexcept -> wrapper::Queue& { return m_graphicsQueue; }
 
     [[nodiscard]]
-    auto getPresentQueue() const noexcept -> const Queue& { return m_presentQueue; }
+    auto getPresentQueue() noexcept -> wrapper::Queue& { return m_presentQueue; }
+
+    [[nodiscard]]
+    auto getTransferQueue() noexcept -> wrapper::Queue& { return m_transferQueue; }
 private:
     VkPhysicalDevice m_physDevice{VK_NULL_HANDLE};
     VkDevice m_device{VK_NULL_HANDLE};
 
-    Queue m_graphicsQueue{};
-    Queue m_presentQueue{};
+    wrapper::Queue m_graphicsQueue;
+    wrapper::Queue m_presentQueue;
+    wrapper::Queue m_transferQueue;
 
     [[nodiscard]]
     constexpr static auto get_default_extensions() noexcept -> std::vector<const char*>

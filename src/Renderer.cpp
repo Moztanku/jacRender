@@ -10,7 +10,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "UBO.hpp"
-#include "common/defs.hpp"
 #include "vulkan/utils.hpp"
 #include "vulkan/Shader.hpp"
 
@@ -36,56 +35,26 @@ auto get_default_shaders(vulkan::Device& device) -> std::vector<vulkan::Shader> 
 
 Renderer::Renderer(
     vulkan::Window& window,
-    [[maybe_unused]] const Config& config) :
-    m_window{window}
+    [[maybe_unused]] const Config& config)
+    : m_window{window}
+    , m_instance{vulkan::get_default_validation_layers()}
+    , m_surface{m_instance, m_window}
+    , m_device{m_instance, m_surface}
+    , m_swapchain{m_device, m_surface, m_window}
+    , m_maxFramesInFlight{static_cast<uint8_t>(m_swapchain.getImageCount())}
+    , m_descriptorSetLayout{m_device}
+    , m_descriptorSets(
+        vulkan::DescriptorSet::Create(
+            m_device,
+            m_descriptorSetLayout.getLayout(),
+            m_maxFramesInFlight))
+    , m_pipeline{
+        m_device,
+        m_swapchain,
+        get_default_shaders(m_device),
+        m_descriptorSetLayout.getLayout()},
+    m_framebuffer{m_device, m_swapchain, m_pipeline}
 {
-    const std::vector<const char*> layers = {
-        "VK_LAYER_KHRONOS_validation"
-    };
-
-    if constexpr (common::DEBUG) {
-        m_instance = std::make_unique<vulkan::Instance>(layers);
-    } else {
-        m_instance = std::make_unique<vulkan::Instance>();
-    }
-
-    m_surface = std::make_unique<vulkan::Surface>(
-        *m_instance,
-        m_window
-    );
-
-    m_device = std::make_unique<vulkan::Device>(
-        *m_instance,
-        *m_surface
-    );
-
-    m_swapchain = std::make_unique<vulkan::Swapchain>(
-        *m_device,
-        *m_surface,
-        m_window
-    );
-    m_maxFramesInFlight = static_cast<uint8_t>(m_swapchain->getImageCount());
-
-    m_descriptorSetLayout = std::make_unique<DescriptorSetLayout>(*m_device);
-    m_descriptorSets = vulkan::DescriptorSet::Create(
-        *m_device,
-        m_descriptorSetLayout->getLayout(),
-        m_maxFramesInFlight
-    );
-
-    const auto shaders = get_default_shaders(*m_device);
-    m_pipeline = std::make_unique<vulkan::Pipeline>(
-        *m_device,
-        *m_swapchain,
-        shaders,
-        m_descriptorSetLayout->getLayout()
-    );
-
-    m_framebuffer = std::make_unique<vulkan::Framebuffer>(
-        *m_device,
-        *m_swapchain,
-        *m_pipeline
-    );
 
     // Create vertex and index buffers
     const std::vector<Vertex> vertices = {
@@ -104,34 +73,34 @@ Renderer::Renderer(
     //  Mesh should hold vertex and index buffers, MemoryManager should handle model loading
     //  and staging buffers with it
     m_vertexBuffer = std::make_unique<vulkan::VertexBuffer>(
-        *m_device,
+        m_device,
         sizeof(Vertex) * vertices.size()
     );
     m_indexBuffer = std::make_unique<vulkan::IndexBuffer>(
-        *m_device,
+        m_device,
         sizeof(uint32_t) * indices.size()
     );
 
     auto staging_buffer = vulkan::StagingBuffer{
-        *m_device,
+        m_device,
         sizeof(Vertex) * vertices.size()
     };
     staging_buffer.copyDataToBuffer(vertices);
 
     auto staging_index_buffer = vulkan::StagingBuffer{
-        *m_device,
+        m_device,
         sizeof(uint32_t) * indices.size()
     };
     staging_index_buffer.copyDataToBuffer(indices);
 
-    auto tempCommandbuffer = vulkan::CommandBuffer(*m_device);
+    auto tempCommandbuffer = vulkan::CommandBuffer(m_device);
     tempCommandbuffer.begin(true); // One-time submit
-    tempCommandbuffer.copyBuffer(
+    tempCommandbuffer.copy(
         staging_buffer.getBuffer(),
         m_vertexBuffer->getBuffer(),
         sizeof(Vertex) * vertices.size()
     );
-    tempCommandbuffer.copyBuffer(
+    tempCommandbuffer.copy(
         staging_index_buffer.getBuffer(),
         m_indexBuffer->getBuffer(),
         sizeof(uint32_t) * indices.size()
@@ -144,12 +113,12 @@ Renderer::Renderer(
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &tempCommandbuffer.getCommandBuffer();
     vkQueueSubmit(
-        m_device->getGraphicsQueue().queue,
+        m_device.getGraphicsQueue().queue,
         1,
         &submitInfo,
         VK_NULL_HANDLE // No fence
     );
-    vkQueueWaitIdle(m_device->getGraphicsQueue().queue);
+    vkQueueWaitIdle(m_device.getGraphicsQueue().queue);
     // Wait for the transfer to complete
 
     // Create uniform buffers
@@ -157,7 +126,7 @@ Renderer::Renderer(
 
     for (uint8_t i = 0; i < m_maxFramesInFlight; ++i) {
         m_uniformBuffers.emplace_back(
-            *m_device,
+            m_device,
             sizeof(UBO)
         );
     }
@@ -178,7 +147,7 @@ Renderer::Renderer(
         descriptorWrite.pBufferInfo = &bufferInfo;
 
         vkUpdateDescriptorSets(
-            m_device->getDevice(),
+            m_device.getDevice(),
             1,
             &descriptorWrite,
             0,
@@ -188,11 +157,11 @@ Renderer::Renderer(
 
     // Create command buffers for rendering
     m_commandBuffersVec.reserve(m_maxFramesInFlight);
-    m_commandBuffersVec.emplace_back(*m_device);
+    m_commandBuffersVec.emplace_back(m_device);
     const auto& command_pool = m_commandBuffersVec.back().getCommandPool();
 
     for (uint8_t i = 1; i < m_maxFramesInFlight; ++i) {
-        m_commandBuffersVec.emplace_back(*m_device, command_pool);
+        m_commandBuffersVec.emplace_back(m_device, command_pool);
     }
 
     m_imageAvailableVec.reserve(m_maxFramesInFlight);
@@ -200,15 +169,15 @@ Renderer::Renderer(
     m_inFlightVec.reserve(m_maxFramesInFlight);
 
     for (uint8_t i = 0; i < m_maxFramesInFlight; ++i) {
-        m_imageAvailableVec.emplace_back(*m_device);
-        m_renderFinishedVec.emplace_back(*m_device);
-        m_inFlightVec.emplace_back(*m_device);
+        m_imageAvailableVec.emplace_back(m_device);
+        m_renderFinishedVec.emplace_back(m_device);
+        m_inFlightVec.emplace_back(m_device);
     }
 }
 
 Renderer::~Renderer()
 {
-    vkDeviceWaitIdle(m_device->getDevice());
+    vkDeviceWaitIdle(m_device.getDevice());
 }
 
 void Renderer::renderFrame() {
@@ -222,7 +191,7 @@ void Renderer::renderFrame() {
     m_inFlight.reset();
 
     // 2. Acquire the next image from the swapchain
-    const uint32_t imageIndex = m_swapchain->acquireNextImage(m_imageAvailable);
+    const uint32_t imageIndex = m_swapchain.acquireNextImage(m_imageAvailable);
     auto& m_renderFinished = m_renderFinishedVec[imageIndex];   // need to use imageIndex because swapchain images are not
                                                                 // guaranteed to be returned in the same order every frame
 
@@ -231,16 +200,16 @@ void Renderer::renderFrame() {
     m_commandBuffer.begin();
 
     m_commandBuffer.beginRenderPass(
-        m_pipeline->getRenderPass(),
-        m_framebuffer->getFramebuffer(imageIndex),
-        m_swapchain->getExtent()
+        m_pipeline.getRenderPass(),
+        m_framebuffer.getFramebuffer(imageIndex),
+        m_swapchain.getExtent()
     );
-    m_commandBuffer.set(m_swapchain->getViewport());
-    m_commandBuffer.set(m_swapchain->getScissor());
-    m_commandBuffer.bind(*m_pipeline);
+    m_commandBuffer.set(m_swapchain.getViewport());
+    m_commandBuffer.set(m_swapchain.getScissor());
+    m_commandBuffer.bind(m_pipeline);
     m_commandBuffer.bind(*m_vertexBuffer);
     m_commandBuffer.bind(*m_indexBuffer);
-    m_commandBuffer.bind(m_descriptorSets[m_currentFrame], m_pipeline->getPipelineLayout());
+    m_commandBuffer.bind(m_descriptorSets[m_currentFrame], m_pipeline.getPipelineLayout());
 
     // const auto draw_command = vulkan::CommandBuffer::DrawNoIndex{3}; // 3 vertices hardcoded for now
     const auto draw_command = vulkan::CommandBuffer::DrawIndexed{
@@ -277,7 +246,7 @@ void Renderer::renderFrame() {
 
     ubo.proj = glm::perspective(
         glm::radians(45.0f),
-        static_cast<float>(m_swapchain->getExtent().width) / static_cast<float>(m_swapchain->getExtent().height),
+        static_cast<float>(m_swapchain.getExtent().width) / static_cast<float>(m_swapchain.getExtent().height),
         0.1f,
         10.0f
     );
@@ -304,7 +273,7 @@ void Renderer::renderFrame() {
     submitInfo.pSignalSemaphores = m_renderFinished;
 
     const VkResult result = vkQueueSubmit(
-        m_device->getGraphicsQueue().queue,
+        m_device.getGraphicsQueue().queue,
         1,
         &submitInfo,
         m_inFlight
@@ -323,12 +292,12 @@ void Renderer::renderFrame() {
     presentInfo.pWaitSemaphores = m_renderFinished;
 
     presentInfo.swapchainCount = 1;
-    presentInfo.pSwapchains = &m_swapchain->getSwapchain();
+    presentInfo.pSwapchains = &m_swapchain.getSwapchain();
     presentInfo.pImageIndices = &imageIndex;
     presentInfo.pResults = nullptr;
 
     const VkResult presentResult = vkQueuePresentKHR(
-        m_device->getPresentQueue().queue,
+        m_device.getPresentQueue().queue,
         &presentInfo
     );
 

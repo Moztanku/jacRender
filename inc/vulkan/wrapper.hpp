@@ -596,4 +596,20 @@ void DestroyShaderModule(
     const VkAllocationCallbacks*                pAllocator,
     const std::source_location&                 location = std::source_location::current());
 
+/// Texture functions
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkCreateImage.html
+void CreateImage(
+    VkDevice                                    device,
+    const VkImageCreateInfo*                    pCreateInfo,
+    const VkAllocationCallbacks*                pAllocator,
+    VkImage*                                     pImage,
+    const std::source_location&                 location = std::source_location::current());
+
+/// @see https://registry.khronos.org/vulkan/spec/latest/man/html/vkDestroyImage.html
+void DestroyImage(
+    VkDevice                                    device,
+    VkImage                                     image,
+    const VkAllocationCallbacks*                pAllocator,
+    const std::source_location&                 location = std::source_location::current());
+
 } // namespace vlk

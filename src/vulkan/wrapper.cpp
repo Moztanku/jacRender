@@ -49,7 +49,7 @@ auto EXEC_VK_FUNCTION(
     TArgs&&... args
 ) -> void {
     if constexpr (std::is_void_v<std::invoke_result_t<TFunc, TArgs...>> || !common::DEBUG)
-        return func(std::forward<TArgs>(args)...);
+        func(std::forward<TArgs>(args)...);
     else
         return CHECK_VK_RESULT(
             func(std::forward<TArgs>(args)...),
@@ -1381,6 +1381,43 @@ void DestroyShaderModule(
         vkDestroyShaderModule,
         device,
         shaderModule,
+        pAllocator
+    );
+}
+
+/// Texture functions
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkCreateImage.html
+void CreateImage(
+    VkDevice                                    device,
+    const VkImageCreateInfo*                    pCreateInfo,
+    const VkAllocationCallbacks*                pAllocator,
+    VkImage*                                     pImage,
+    const std::source_location&                 location)
+{
+    EXEC_VK_FUNCTION(
+        location,
+        "Failed to create image",
+        vkCreateImage,
+        device,
+        pCreateInfo,
+        pAllocator,
+        pImage
+    );
+}
+
+/// @see https://registry.khronos.org/vulkan/spec/latest/man/html/vkDestroyImage.html
+void DestroyImage(
+    VkDevice                                    device,
+    VkImage                                     image,
+    const VkAllocationCallbacks*                pAllocator,
+    const std::source_location&                 location)
+{
+    EXEC_VK_FUNCTION(
+        location,
+        "Failed to destroy image",
+        vkDestroyImage,
+        device,
+        image,
         pAllocator
     );
 }

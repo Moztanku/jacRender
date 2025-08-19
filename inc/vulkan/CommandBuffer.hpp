@@ -51,13 +51,43 @@ public:
     auto set(const VkViewport&) -> void;
     auto set(const VkRect2D&) -> void;
 
-    // Copy buffer command
-    auto copyBuffer(
+    // Copy buffer to buffer command
+    auto copy(
         VkBuffer srcBuffer,
         VkBuffer dstBuffer,
         VkDeviceSize size,
         VkDeviceSize srcOffset = 0,
         VkDeviceSize dstOffset = 0) -> void;
+
+    // Copy buffer to image command
+    auto copy(
+        VkBuffer srcBuffer,
+        VkImage dstImage,
+        VkDeviceSize /* size */,
+        uint32_t width,
+        uint32_t height) -> void
+    {
+        VkBufferImageCopy region{};
+        region.bufferOffset = 0;
+        region.bufferRowLength = 0;
+        region.bufferImageHeight = 0;
+
+        region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        region.imageSubresource.mipLevel = 0;
+        region.imageSubresource.baseArrayLayer = 0;
+        region.imageSubresource.layerCount = 1;
+
+        region.imageOffset = {0, 0, 0};
+        region.imageExtent = {width, height, 1};
+
+        vkCmdCopyBufferToImage(
+            m_commandBuffer,
+            srcBuffer,
+            dstImage,
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            1,
+            &region);
+    }
 
     // Issue draw commands
     struct DrawCommandI;
@@ -65,6 +95,38 @@ public:
     struct DrawIndexed;
 
     auto record(const DrawCommandI&) -> void;
+
+    // transition commands
+    auto transitionImageLayout(
+        VkImage image,
+        VkFormat /* format */,
+        VkImageLayout oldLayout,
+        VkImageLayout newLayout) -> void
+    {
+        VkImageMemoryBarrier barrier{};
+        barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        barrier.oldLayout = oldLayout;
+        barrier.newLayout = newLayout;
+        barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.image = image;
+        barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        barrier.subresourceRange.baseMipLevel = 0;
+        barrier.subresourceRange.levelCount = 1;
+        barrier.subresourceRange.baseArrayLayer = 0;
+        barrier.subresourceRange.layerCount = 1;
+        barrier.srcAccessMask = 0;
+        barrier.dstAccessMask = 0;
+
+        vkCmdPipelineBarrier(
+            m_commandBuffer,
+            0, 0,
+            0,
+            0, nullptr,
+            0, nullptr,
+            1, &barrier
+        );
+    }
 
     [[nodiscard]]
     auto getCommandPool() noexcept -> std::shared_ptr<VkCommandPool>& { return m_commandPool; }

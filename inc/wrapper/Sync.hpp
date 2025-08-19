@@ -13,11 +13,11 @@
 #include "vulkan/utils.hpp"
 #include "vulkan/wrapper.hpp"
 
-namespace vulkan {
+namespace wrapper {
 
 class Semaphore {
 public:
-    Semaphore(Device& device) : m_device{device.getDevice()} {
+    Semaphore(vulkan::Device& device) : m_device{device.getDevice()} {
         VkSemaphoreCreateInfo semaphoreInfo{};
         semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
@@ -61,7 +61,7 @@ private:
 
 class Fence {
 public:
-    Fence(Device& device, bool signaled = true) : m_device{device.getDevice()} {
+    Fence(vulkan::Device& device, bool signaled = true) : m_device{device.getDevice()} {
         VkFenceCreateInfo fenceInfo{};
         fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
         fenceInfo.flags = signaled ? VK_FENCE_CREATE_SIGNALED_BIT : 0;
@@ -118,4 +118,4 @@ private:
     const VkDevice m_device{VK_NULL_HANDLE};
 };
 
-} // namespace vulkan
+} // namespace wrapper

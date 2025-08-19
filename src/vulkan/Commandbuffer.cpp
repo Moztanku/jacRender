@@ -144,7 +144,7 @@ auto CommandBuffer::set(const VkRect2D& scissor) -> void {
     vlk::CmdSetScissor(m_commandBuffer, 0, 1, &scissor);
 }
 
-auto CommandBuffer::copyBuffer(
+auto CommandBuffer::copy(
     VkBuffer srcBuffer,
     VkBuffer dstBuffer,
     VkDeviceSize size,
