@@ -7,14 +7,12 @@
 #include <vulkan/vulkan.h>
 
 #include <vector>
-#include <stdexcept>
-#include <iostream>
-#include "vulkan/utils.hpp"
 
 #include <vulkan/Surface.hpp>
 #include <vulkan/Device.hpp>
 
 #include "vulkan/wrapper.hpp"
+#include "wrapper/Queue.hpp"
 
 namespace vulkan {
 
@@ -33,65 +31,30 @@ public:
     Swapchain& operator=(Swapchain&&) = delete;
 
     [[nodiscard]]
-    auto getExtent() const noexcept -> VkExtent2D { return m_extent; }
+    auto acquireNextImage(VkSemaphore imageAvailable) -> uint32_t;
+
+    auto present(const wrapper::Queue& presentQueue, uint32_t imageIndex, VkSemaphore waitSemaphore = VK_NULL_HANDLE) -> void;
 
     [[nodiscard]]
-    auto getFormat() const noexcept -> VkFormat { return m_format; }
+    auto getExtent() const noexcept -> VkExtent2D;
 
     [[nodiscard]]
-    auto getImageViews() const noexcept -> const std::vector<VkImageView>& {
-        return m_imageViews;
-    }
+    auto getFormat() const noexcept -> VkFormat;
 
     [[nodiscard]]
-    auto getViewport() const noexcept -> VkViewport {
-        return VkViewport{
-            .x = 0.0f,
-            .y = 0.0f,
-            .width = static_cast<float>(m_extent.width),
-            .height = static_cast<float>(m_extent.height),
-            .minDepth = 0.0f,
-            .maxDepth = 1.0f
-        };
-    }
+    auto getImageViews() const noexcept -> const std::vector<VkImageView>&;
 
     [[nodiscard]]
-    auto getScissor() const noexcept -> VkRect2D {
-        return VkRect2D{
-            .offset = {0, 0},
-            .extent = m_extent
-        };
-    }
+    auto getViewport() const noexcept -> VkViewport;
 
     [[nodiscard]]
-    auto acquireNextImage(VkSemaphore imageAvailable) -> uint32_t {
-        uint32_t imageIndex;
-        vlk::AcquireNextImageKHR(
-            m_device,
-            m_swapchain,
-            std::numeric_limits<uint64_t>::max(), // Use a very large timeout
-            imageAvailable,
-            VK_NULL_HANDLE, // No fence
-            &imageIndex
-        );
-
-        if (imageIndex == VK_SUBOPTIMAL_KHR) {
-            // The swapchain is still valid, but may need to be recreated
-            // This is a warning, not an error
-            std::cerr << "Swapchain is suboptimal, consider recreating it." << std::endl;
-        }
-
-        return imageIndex;
-    }
+    auto getScissor() const noexcept -> VkRect2D;
 
     [[nodiscard]]
-    auto getSwapchain() const noexcept -> const VkSwapchainKHR& { return m_swapchain; }
+    auto getSwapchain() const noexcept -> const VkSwapchainKHR&;
 
     [[nodiscard]]
-    auto getImageCount() const noexcept -> size_t {
-        return m_images.size();
-    }
-
+    auto getImageCount() const noexcept -> size_t;
 private:
     VkSwapchainKHR m_swapchain{VK_NULL_HANDLE};
     const VkDevice m_device{VK_NULL_HANDLE};

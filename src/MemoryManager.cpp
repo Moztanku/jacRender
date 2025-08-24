@@ -1,5 +1,7 @@
 #include "MemoryManager.hpp"
 
+#include <cstring>
+
 namespace {
 
 auto create_vma_allocator(vulkan::Instance& instance, vulkan::Device& device) -> VmaAllocator
@@ -25,6 +27,24 @@ auto create_vma_allocator(vulkan::Instance& instance, vulkan::Device& device) ->
     return allocator;
 }
 
+auto get_memory_usage(MemoryUsage usage) -> VmaMemoryUsage
+{
+    switch (usage) {
+        case MemoryUsage::GPU_ONLY:
+            return VMA_MEMORY_USAGE_GPU_ONLY;
+        case MemoryUsage::CPU_ONLY:
+            return VMA_MEMORY_USAGE_CPU_ONLY;
+        case MemoryUsage::CPU_TO_GPU:
+            return VMA_MEMORY_USAGE_CPU_TO_GPU;
+        case MemoryUsage::GPU_TO_CPU:
+            return VMA_MEMORY_USAGE_GPU_TO_CPU;
+        case MemoryUsage::AUTO:
+            return VMA_MEMORY_USAGE_AUTO;
+        default:
+            throw std::invalid_argument("Unsupported memory usage.");
+    }
+}
+
 auto buffer_type_to_flags(wrapper::BufferType type) -> VmaAllocationCreateFlags
 {
     using Type = wrapper::BufferType;
@@ -34,7 +54,7 @@ auto buffer_type_to_flags(wrapper::BufferType type) -> VmaAllocationCreateFlags
         case Type::INDEX:
             return 0;
         case Type::UNIFORM:
-            return VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
+            return VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
         // case Type::STORAGE:
         //     return VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
         case Type::STAGING:
@@ -70,7 +90,8 @@ MemoryManager::MemoryManager(
     vulkan::Device& device)
 : m_allocator{create_vma_allocator(instance, device)}
 , m_device{device.getDevice()}
-, m_transferQueue{device.getTransferQueue()}
+// , m_transferQueue{device.getTransferQueue()}
+, m_transferQueue{device.getGraphicsQueue()} // Using graphics queue for transfer for simplicity, TODO: change if improvement needed
 , m_commandPool{device, m_transferQueue.familyIndex}
 {
 }
@@ -91,25 +112,13 @@ auto MemoryManager::createBuffer(
     MemoryUsage usage
 ) -> wrapper::Buffer {
     VmaAllocationCreateInfo allocInfo{};
-    allocInfo.usage =
-        usage == MemoryUsage::GPU_ONLY ? VMA_MEMORY_USAGE_GPU_ONLY :
-        usage == MemoryUsage::CPU_ONLY ? VMA_MEMORY_USAGE_CPU_ONLY :
-        usage == MemoryUsage::CPU_TO_GPU ? VMA_MEMORY_USAGE_CPU_TO_GPU :
-        usage == MemoryUsage::GPU_TO_CPU ? VMA_MEMORY_USAGE_GPU_TO_CPU :
-        VMA_MEMORY_USAGE_AUTO;
-
+    allocInfo.usage = get_memory_usage(usage);
     allocInfo.flags = buffer_type_to_flags(type);
 
     VkBufferCreateInfo bufferInfo{};
     bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     bufferInfo.size = size;
-    bufferInfo.usage =
-        type == wrapper::BufferType::VERTEX ? VK_BUFFER_USAGE_VERTEX_BUFFER_BIT :
-        type == wrapper::BufferType::INDEX ? VK_BUFFER_USAGE_INDEX_BUFFER_BIT :
-        type == wrapper::BufferType::UNIFORM ? VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT :
-        // type == wrapper::BufferType::STORAGE ? VK_BUFFER_USAGE_STORAGE_BUFFER_BIT :
-        type == wrapper::BufferType::STAGING ? VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT :
-        0;
+    bufferInfo.usage = buffer_type_to_usage(type);
 
     // Handle sharing ourself
     bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
@@ -118,6 +127,7 @@ auto MemoryManager::createBuffer(
 
     VkBuffer buffer;
     VmaAllocation allocation;
+    VmaAllocationInfo allocationInfo;
 
     vmaCreateBuffer(
         m_allocator,
@@ -125,14 +135,20 @@ auto MemoryManager::createBuffer(
         &allocInfo,
         &buffer,
         &allocation,
-        nullptr // No allocation info needed
+        &allocationInfo
     );
 
     if (buffer == VK_NULL_HANDLE || allocation == VK_NULL_HANDLE) {
         throw std::runtime_error("Failed to create buffer.");
     }
 
-    return wrapper::Buffer(buffer, allocation, m_allocator, type);
+    return wrapper::Buffer(
+        buffer,
+        allocation,
+        m_allocator,
+        type,
+        size,
+        allocationInfo.pMappedData);
 }
 
 auto MemoryManager::createImage(
@@ -141,17 +157,112 @@ auto MemoryManager::createImage(
     wrapper::ImageType type,
     MemoryUsage usage
 ) -> wrapper::Image {
-    
+    VmaAllocationCreateInfo allocInfo{};
+    allocInfo.usage = get_memory_usage(usage);
+    allocInfo.flags = 0; // No special flags for now
+
+    VkImageCreateInfo imageInfo{};
+    imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    imageInfo.imageType = VK_IMAGE_TYPE_2D;
+    imageInfo.extent = extent;
+    imageInfo.mipLevels = 1;
+    imageInfo.arrayLayers = 1;
+    imageInfo.format = format;
+    imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+    imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    imageInfo.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+    imageInfo.queueFamilyIndexCount = 1;
+    imageInfo.pQueueFamilyIndices = &m_transferQueue.familyIndex;
+    imageInfo.flags = 0; // No special flags for now
+
+    VkImage image;
+    VmaAllocation allocation;
+
+    vmaCreateImage(
+        m_allocator,
+        &imageInfo,
+        &allocInfo,
+        &image,
+        &allocation,
+        nullptr // No allocation info needed
+    );
+
+    if (image == VK_NULL_HANDLE || allocation == VK_NULL_HANDLE) {
+        throw std::runtime_error("Failed to create image.");
+    }
+
+    return wrapper::Image(image, allocation, m_allocator, type);
 }
 
-auto MemoryManager::map(const wrapper::Buffer& buffer) -> void*
-{}
+auto MemoryManager::copyDataToBuffer(
+    const void* data,
+    VkDeviceSize size,
+    wrapper::Buffer& buffer,
+    VkDeviceSize offset
+) -> void {
+    if (buffer.getType() != wrapper::BufferType::STAGING &&
+        buffer.getType() != wrapper::BufferType::UNIFORM) {
+        throw std::invalid_argument("copyDataToBuffer currently only supports STAGING and UNIFORM buffers.");
+    }
 
-auto MemoryManager::unmap(const wrapper::Buffer& buffer) -> void
-{}
+    std::memcpy(
+        static_cast<uint8_t*>(buffer.getMappedData()) + offset,
+        data,
+        size
+    );
+}
 
-auto MemoryManager::map(const wrapper::Image& image) -> void*
-{}
+auto MemoryManager::copy(
+    wrapper::Buffer& srcBuffer,
+    wrapper::Buffer& dstBuffer,
+    VkDeviceSize size,
+    VkDeviceSize srcOffset,
+    VkDeviceSize dstOffset
+) -> void {
+    auto& cmdBuffer = m_commandPool.getCmdBuffer(0);
 
-auto MemoryManager::unmap(const wrapper::Image& image) -> void
-{}
+    if (size == VK_WHOLE_SIZE) {
+        size = srcBuffer.getSize() - srcOffset;
+    }
+
+    cmdBuffer.begin(true); // One-time submit
+    cmdBuffer.copy(
+        srcBuffer,
+        dstBuffer,
+        size,
+        srcOffset,
+        dstOffset
+    );
+    cmdBuffer.end();
+
+    m_transferQueue.submit(
+        cmdBuffer.getCommandBuffer()
+    );
+    m_transferQueue.waitIdle();
+}
+
+// auto MemoryManager::map(const wrapper::Buffer& buffer) -> void*
+// {
+//     void* data;
+//     vmaMapMemory(m_allocator, buffer.getAllocation(), &data);
+//     return data;
+// }
+
+// auto MemoryManager::unmap(const wrapper::Buffer& buffer) -> void
+// {
+//     vmaUnmapMemory(m_allocator, buffer.getAllocation());
+// }
+
+// auto MemoryManager::map(const wrapper::Image& image) -> void*
+// {
+//     void* data;
+//     vmaMapMemory(m_allocator, image.getAllocation(), &data);
+//     return data;
+// }
+
+// auto MemoryManager::unmap(const wrapper::Image& image) -> void
+// {
+//     vmaUnmapMemory(m_allocator, image.getAllocation());
+// }

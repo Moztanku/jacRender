@@ -4,6 +4,7 @@
 #include <vector>
 #include <stdexcept>
 #include <limits>
+#include <iostream>
 
 #include "vulkan/wrapper.hpp"
 #include "vulkan/utils.hpp"
@@ -189,6 +190,97 @@ Swapchain::Swapchain(
     create_image_views();
 }
 
+Swapchain::~Swapchain()
+{
+    for (auto imageView : m_imageViews) {
+        if (imageView != VK_NULL_HANDLE) {
+            vlk::DestroyImageView(m_device, imageView, nullptr);
+        }
+    }
+    m_imageViews.clear();
+
+    if (m_swapchain != VK_NULL_HANDLE) {
+        vlk::DestroySwapchainKHR(m_device, m_swapchain, nullptr);
+        m_swapchain = VK_NULL_HANDLE;
+    }
+}
+
+auto Swapchain::acquireNextImage(VkSemaphore imageAvailable) -> uint32_t {
+    uint32_t imageIndex;
+    vlk::AcquireNextImageKHR(
+        m_device,
+        m_swapchain,
+        std::numeric_limits<uint64_t>::max(), // Use a very large timeout
+        imageAvailable,
+        VK_NULL_HANDLE, // No fence
+        &imageIndex
+    );
+
+    if (imageIndex == VK_SUBOPTIMAL_KHR) {
+        // The swapchain is still valid, but may need to be recreated
+        // This is a warning, not an error
+        std::cerr << "Swapchain is suboptimal, consider recreating it." << std::endl;
+    }
+
+    return imageIndex;
+}
+
+auto Swapchain::present(const wrapper::Queue& presentQueue, uint32_t imageIndex, VkSemaphore waitSemaphore) -> void {
+    VkPresentInfoKHR presentInfo{};
+    presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+    
+    if (waitSemaphore != VK_NULL_HANDLE) {
+        presentInfo.waitSemaphoreCount = 1;
+        presentInfo.pWaitSemaphores = &waitSemaphore;
+    }
+
+    presentInfo.swapchainCount = 1;
+    presentInfo.pSwapchains = &m_swapchain;
+    presentInfo.pImageIndices = &imageIndex;
+    presentInfo.pResults = nullptr;
+
+    // Note: remember to check for VK_SUBOPTIMAL_KHR
+    vkQueuePresentKHR(presentQueue.queue, &presentInfo);
+}
+
+auto Swapchain::getExtent() const noexcept -> VkExtent2D {
+    return m_extent;
+}
+
+auto Swapchain::getFormat() const noexcept -> VkFormat {
+    return m_format;
+}
+
+auto Swapchain::getImageViews() const noexcept -> const std::vector<VkImageView>& {
+    return m_imageViews;
+}
+
+auto Swapchain::getViewport() const noexcept -> VkViewport {
+    return VkViewport{
+        .x = 0.0f,
+        .y = 0.0f,
+        .width = static_cast<float>(m_extent.width),
+        .height = static_cast<float>(m_extent.height),
+        .minDepth = 0.0f,
+        .maxDepth = 1.0f
+    };
+}
+
+auto Swapchain::getScissor() const noexcept -> VkRect2D {
+    return VkRect2D{
+        .offset = {0, 0},
+        .extent = m_extent
+    };
+}
+
+auto Swapchain::getSwapchain() const noexcept -> const VkSwapchainKHR& {
+    return m_swapchain;
+}
+
+auto Swapchain::getImageCount() const noexcept -> size_t {
+    return m_images.size();
+}
+
 auto Swapchain::create_image_views() -> void
 {
     m_imageViews.resize(m_images.size());
@@ -216,21 +308,6 @@ auto Swapchain::create_image_views() -> void
             nullptr,
             &m_imageViews[i]
         );
-    }
-}
-
-Swapchain::~Swapchain()
-{
-    for (auto imageView : m_imageViews) {
-        if (imageView != VK_NULL_HANDLE) {
-            vlk::DestroyImageView(m_device, imageView, nullptr);
-        }
-    }
-    m_imageViews.clear();
-
-    if (m_swapchain != VK_NULL_HANDLE) {
-        vlk::DestroySwapchainKHR(m_device, m_swapchain, nullptr);
-        m_swapchain = VK_NULL_HANDLE;
     }
 }
 

@@ -10,6 +10,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "UBO.hpp"
+#include "Vertex.hpp"
 #include "vulkan/utils.hpp"
 #include "vulkan/Shader.hpp"
 
@@ -42,20 +43,16 @@ Renderer::Renderer(
     , m_device{m_instance, m_surface}
     , m_swapchain{m_device, m_surface, m_window}
     , m_maxFramesInFlight{static_cast<uint8_t>(m_swapchain.getImageCount())}
-    , m_descriptorSetLayout{m_device}
-    , m_descriptorSets(
-        vulkan::DescriptorSet::Create(
-            m_device,
-            m_descriptorSetLayout.getLayout(),
-            m_maxFramesInFlight))
+    , m_descriptorPool{m_device.getDevice(), m_maxFramesInFlight}
     , m_pipeline{
         m_device,
         m_swapchain,
         get_default_shaders(m_device),
-        m_descriptorSetLayout.getLayout()},
-    m_framebuffer{m_device, m_swapchain, m_pipeline}
+        m_descriptorPool.getLayout()},
+    m_framebuffer{m_device, m_swapchain, m_pipeline},
+    m_commandPool{m_device, m_device.getGraphicsQueue().familyIndex, m_maxFramesInFlight},
+    m_memoryManager{m_instance, m_device}
 {
-
     // Create vertex and index buffers
     const std::vector<Vertex> vertices = {
         {{-0.5f, 0.5f}, {1.0f, 0.0f, 0.0f}}, // Bottom left
@@ -69,65 +66,58 @@ Renderer::Renderer(
         2, 3, 0  // Second triangle
     };
 
-    // TODO: Move resource management to a separate class
-    //  Mesh should hold vertex and index buffers, MemoryManager should handle model loading
-    //  and staging buffers with it
-    m_vertexBuffer = std::make_unique<vulkan::VertexBuffer>(
-        m_device,
-        sizeof(Vertex) * vertices.size()
+    m_vertexBuffer = std::make_unique<wrapper::Buffer>(
+        m_memoryManager.createBuffer(
+            sizeof(Vertex) * vertices.size(),
+            wrapper::BufferType::VERTEX
+        )
     );
-    m_indexBuffer = std::make_unique<vulkan::IndexBuffer>(
-        m_device,
-        sizeof(uint32_t) * indices.size()
+    m_indexBuffer = std::make_unique<wrapper::Buffer>(
+        m_memoryManager.createBuffer(
+            sizeof(uint32_t) * indices.size(),
+            wrapper::BufferType::INDEX
+        )
     );
 
-    auto staging_buffer = vulkan::StagingBuffer{
-        m_device,
-        sizeof(Vertex) * vertices.size()
-    };
-    staging_buffer.copyDataToBuffer(vertices);
-
-    auto staging_index_buffer = vulkan::StagingBuffer{
-        m_device,
-        sizeof(uint32_t) * indices.size()
-    };
-    staging_index_buffer.copyDataToBuffer(indices);
-
-    auto tempCommandbuffer = vulkan::CommandBuffer(m_device);
-    tempCommandbuffer.begin(true); // One-time submit
-    tempCommandbuffer.copy(
-        staging_buffer.getBuffer(),
-        m_vertexBuffer->getBuffer(),
-        sizeof(Vertex) * vertices.size()
+    auto staging_buffer = m_memoryManager.createBuffer(
+        sizeof(Vertex) * vertices.size(),
+        wrapper::BufferType::STAGING,
+        MemoryUsage::CPU_TO_GPU
     );
-    tempCommandbuffer.copy(
-        staging_index_buffer.getBuffer(),
-        m_indexBuffer->getBuffer(),
-        sizeof(uint32_t) * indices.size()
+    m_memoryManager.copyDataToBuffer(
+        vertices.data(),
+        sizeof(Vertex) * vertices.size(),
+        staging_buffer
     );
-    tempCommandbuffer.end();
+    auto staging_index_buffer = m_memoryManager.createBuffer(
+        sizeof(uint32_t) * indices.size(),
+        wrapper::BufferType::STAGING,
+        MemoryUsage::CPU_TO_GPU
+    );
+    m_memoryManager.copyDataToBuffer(
+        indices.data(),
+        sizeof(uint32_t) * indices.size(),
+        staging_index_buffer
+    );
 
-    // TODO: Use separate transfer queue for staging buffers
-    VkSubmitInfo submitInfo{};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &tempCommandbuffer.getCommandBuffer();
-    vkQueueSubmit(
-        m_device.getGraphicsQueue().queue,
-        1,
-        &submitInfo,
-        VK_NULL_HANDLE // No fence
+    m_memoryManager.copy(
+        staging_buffer,
+        *m_vertexBuffer
     );
-    vkQueueWaitIdle(m_device.getGraphicsQueue().queue);
-    // Wait for the transfer to complete
+    m_memoryManager.copy(
+        staging_index_buffer,
+        *m_indexBuffer
+    );
 
     // Create uniform buffers
     m_uniformBuffers.reserve(m_maxFramesInFlight);
 
     for (uint8_t i = 0; i < m_maxFramesInFlight; ++i) {
         m_uniformBuffers.emplace_back(
-            m_device,
-            sizeof(UBO)
+            m_memoryManager.createBuffer(
+                sizeof(UBO),
+                wrapper::BufferType::UNIFORM
+            )
         );
     }
 
@@ -139,7 +129,7 @@ Renderer::Renderer(
 
         VkWriteDescriptorSet descriptorWrite{};
         descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptorWrite.dstSet = m_descriptorSets[i].getDescriptorSet();
+        descriptorWrite.dstSet = m_descriptorPool.getDescriptorSet(i);
         descriptorWrite.dstBinding = 0;
         descriptorWrite.dstArrayElement = 0;
         descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -153,15 +143,6 @@ Renderer::Renderer(
             0,
             nullptr
         );
-    }
-
-    // Create command buffers for rendering
-    m_commandBuffersVec.reserve(m_maxFramesInFlight);
-    m_commandBuffersVec.emplace_back(m_device);
-    const auto& command_pool = m_commandBuffersVec.back().getCommandPool();
-
-    for (uint8_t i = 1; i < m_maxFramesInFlight; ++i) {
-        m_commandBuffersVec.emplace_back(m_device, command_pool);
     }
 
     m_imageAvailableVec.reserve(m_maxFramesInFlight);
@@ -182,7 +163,7 @@ Renderer::~Renderer()
 
 void Renderer::renderFrame() {
     // 1. Wait for the previous frame to finish
-    auto& m_commandBuffer = m_commandBuffersVec[m_currentFrame];
+    auto& m_commandBuffer = m_commandPool.getCmdBuffer(m_currentFrame);
     auto& m_imageAvailable = m_imageAvailableVec[m_currentFrame];
     auto& m_inFlight = m_inFlightVec[m_currentFrame];
 
@@ -209,10 +190,11 @@ void Renderer::renderFrame() {
     m_commandBuffer.bind(m_pipeline);
     m_commandBuffer.bind(*m_vertexBuffer);
     m_commandBuffer.bind(*m_indexBuffer);
-    m_commandBuffer.bind(m_descriptorSets[m_currentFrame], m_pipeline.getPipelineLayout());
+    m_commandBuffer.bind(
+        m_descriptorPool.getDescriptorSet(m_currentFrame),
+        m_pipeline.getPipelineLayout());
 
-    // const auto draw_command = vulkan::CommandBuffer::DrawNoIndex{3}; // 3 vertices hardcoded for now
-    const auto draw_command = vulkan::CommandBuffer::DrawIndexed{
+    const wrapper::DrawIndexed draw_command{
         6
     };
     m_commandBuffer.record(draw_command);
@@ -252,60 +234,28 @@ void Renderer::renderFrame() {
     );
     ubo.proj[1][1] *= -1; // Vulkan uses a different coordinate system
 
-    m_uniformBuffers[m_currentFrame].copyDataToBuffer(
-        {&ubo, sizeof(ubo)}
+    m_memoryManager.copyDataToBuffer(
+        &ubo,
+        sizeof(ubo),
+        m_uniformBuffers[m_currentFrame]
     );
 
     // 4. Submit the command buffer to the graphics queue (wait for the image to be available)
-    VkSubmitInfo submitInfo{};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
-    submitInfo.waitSemaphoreCount = 1;
-    submitInfo.pWaitSemaphores = m_imageAvailable;
-
-    VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-    submitInfo.pWaitDstStageMask = waitStages;
-
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &m_commandBuffer.getCommandBuffer();
-
-    submitInfo.signalSemaphoreCount = 1;
-    submitInfo.pSignalSemaphores = m_renderFinished;
-
-    const VkResult result = vkQueueSubmit(
-        m_device.getGraphicsQueue().queue,
-        1,
-        &submitInfo,
-        m_inFlight
-    );
-
-    if (result != VK_SUCCESS) {
-        throw std::runtime_error(
-            std::format("Failed to submit draw command buffer: {}", vulkan::to_string(result))
-        );
-    }
+    const wrapper::Queue::SubmitInfo submitInfo{
+        .commandBuffers = {&m_commandBuffer.getCommandBuffer(), 1},
+        .waitSemaphore = m_imageAvailable,
+        .signalSemaphore = m_renderFinished,
+        .fence = m_inFlight,
+        .waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+    };
+    m_device.getGraphicsQueue().submit(submitInfo);
 
     // 5. Present the image to the swapchain (wait for the rendering to finish)
-    VkPresentInfoKHR presentInfo{};
-    presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-    presentInfo.waitSemaphoreCount = 1;
-    presentInfo.pWaitSemaphores = m_renderFinished;
-
-    presentInfo.swapchainCount = 1;
-    presentInfo.pSwapchains = &m_swapchain.getSwapchain();
-    presentInfo.pImageIndices = &imageIndex;
-    presentInfo.pResults = nullptr;
-
-    const VkResult presentResult = vkQueuePresentKHR(
-        m_device.getPresentQueue().queue,
-        &presentInfo
+    m_swapchain.present(
+        m_device.getPresentQueue(),
+        imageIndex,
+        m_renderFinished
     );
-
-    if (presentResult != VK_SUCCESS && presentResult != VK_SUBOPTIMAL_KHR) {
-        throw std::runtime_error(
-            std::format("Failed to present swapchain image: {}", vulkan::to_string(presentResult))
-        );
-    }
 
     // 6. Move to the next frame
     m_currentFrame = (m_currentFrame + 1) % m_maxFramesInFlight;

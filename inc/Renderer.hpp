@@ -10,6 +10,7 @@
 #include "MemoryManager.hpp"
 
 #include "wrapper/CommandPool.hpp"
+#include "wrapper/DescriptorPool.hpp"
 
 #include "vulkan/wrapper.hpp"
 #include "vulkan/Instance.hpp"
@@ -17,58 +18,9 @@
 #include "vulkan/Surface.hpp"
 #include "vulkan/Device.hpp"
 #include "vulkan/Swapchain.hpp"
-#include "vulkan/DescriptorSet.hpp"
 #include "vulkan/Pipeline.hpp"
 #include "vulkan/Framebuffer.hpp"
-#include "vulkan/CommandBuffer.hpp"
 #include "wrapper/Sync.hpp"
-#include "vulkan/Buffer.hpp"
-#include "vulkan/Texture.hpp"
-
-class DescriptorSetLayout {
-public:
-    DescriptorSetLayout(vulkan::Device& device) :
-        m_device{device.getDevice()}
-    {
-        VkDescriptorSetLayoutBinding uboLayoutBinding{};
-        uboLayoutBinding.binding = 0;
-        uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        uboLayoutBinding.descriptorCount = 1;
-
-        uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-        uboLayoutBinding.pImmutableSamplers = nullptr; // Optional
-
-        VkDescriptorSetLayoutCreateInfo layoutInfo{};
-        layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        layoutInfo.bindingCount = 1;
-        layoutInfo.pBindings = &uboLayoutBinding;
-
-        vlk::CreateDescriptorSetLayout(
-            m_device,
-            &layoutInfo,
-            nullptr,
-            &m_layout
-        );
-    }
-
-    ~DescriptorSetLayout() {
-        if (m_layout != VK_NULL_HANDLE) {
-            vlk::DestroyDescriptorSetLayout(m_device, m_layout, nullptr);
-        }
-    }
-
-    DescriptorSetLayout(const DescriptorSetLayout&) = delete;
-    DescriptorSetLayout& operator=(const DescriptorSetLayout&) = delete;
-    DescriptorSetLayout(DescriptorSetLayout&&) = delete;
-    DescriptorSetLayout& operator=(DescriptorSetLayout&&) = delete;
-
-    [[nodiscard]]
-    auto getLayout() const noexcept -> VkDescriptorSetLayout { return m_layout; }
-
-private:
-    VkDescriptorSetLayout m_layout{VK_NULL_HANDLE};
-    const VkDevice m_device{VK_NULL_HANDLE};
-};
 
 class Renderer {
 public:
@@ -98,19 +50,18 @@ private:
     vulkan::Swapchain m_swapchain;
 
     uint8_t m_currentFrame{0};
-    const uint8_t m_maxFramesInFlight{0};
+    const uint8_t m_maxFramesInFlight;
 
-    DescriptorSetLayout m_descriptorSetLayout;
-    std::vector<vulkan::DescriptorSet> m_descriptorSets;
+    wrapper::DescriptorPool m_descriptorPool;
     vulkan::Pipeline m_pipeline;
     vulkan::Framebuffer m_framebuffer;
+    wrapper::CommandPool m_commandPool;
+    MemoryManager m_memoryManager;
 
-    std::unique_ptr<vulkan::Texture> m_texture{};
-    std::unique_ptr<vulkan::VertexBuffer> m_vertexBuffer{};
-    std::unique_ptr<vulkan::IndexBuffer> m_indexBuffer{};
-    std::vector<vulkan::UniformBuffer> m_uniformBuffers{};
+    std::unique_ptr<wrapper::Buffer> m_vertexBuffer{};
+    std::unique_ptr<wrapper::Buffer> m_indexBuffer{};
+    std::vector<wrapper::Buffer> m_uniformBuffers{};
 
-    std::vector<vulkan::CommandBuffer> m_commandBuffersVec{};
     std::vector<wrapper::Semaphore> m_imageAvailableVec{};
     std::vector<wrapper::Semaphore> m_renderFinishedVec{};
     std::vector<wrapper::Fence> m_inFlightVec{};

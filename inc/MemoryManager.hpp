@@ -49,15 +49,31 @@ public:
         MemoryUsage usage = MemoryUsage::AUTO
     ) -> wrapper::Image;
 
-    [[nodiscard]]
-    auto map(const wrapper::Buffer& buffer) -> void*;
-    auto unmap(const wrapper::Buffer& buffer) -> void;
+    auto copyDataToBuffer(
+        const void* data,
+        VkDeviceSize size,
+        wrapper::Buffer& buffer,
+        VkDeviceSize offset = 0
+    ) -> void;
 
-    [[nodiscard]]
-    auto map(const wrapper::Image& image) -> void*;
-    auto unmap(const wrapper::Image& image) -> void;
+    auto copy(
+        wrapper::Buffer& srcBuffer,
+        wrapper::Buffer& dstBuffer,
+        VkDeviceSize size = VK_WHOLE_SIZE,
+        VkDeviceSize srcOffset = 0,
+        VkDeviceSize dstOffset = 0
+    ) -> void;
+
+    // [[nodiscard]]
+    // auto map(const wrapper::Buffer& buffer) -> void*;
+    // auto unmap(const wrapper::Buffer& buffer) -> void;
+
+    // [[nodiscard]]
+    // auto map(const wrapper::Image& image) -> void*;
+    // auto unmap(const wrapper::Image& image) -> void;
 
     // transfer buffer/image from transformQueue to targetQueue (e.g. graphics queue)
+    //  for now we'll use only one transfer queue, so this is a no-op
     auto transfer(const wrapper::Buffer& buffer, const wrapper::Queue& targetQueue) -> void;
     auto transfer(const wrapper::Image& image, const wrapper::Queue& targetQueue) -> void;
 private:
