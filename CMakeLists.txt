@@ -55,8 +55,9 @@ target_sources(${PROJECT_NAME}
     ${SRC_DIR}/main.cpp
     # utilities
     ${SRC_DIR}/common/utils.cpp
-    # VMA implementation
+    # Implementation wrappers for external libraries
     ${SRC_DIR}/wrapper/vma.cpp
+    ${SRC_DIR}/wrapper/stb_image.cpp
     # Vulkan wrappers
     ${SRC_DIR}/vulkan/Window.cpp
     ${SRC_DIR}/vulkan/Instance.cpp

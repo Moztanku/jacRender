@@ -7,10 +7,6 @@
 
 #include <memory>
 
-#include "MemoryManager.hpp"
-
-#include "wrapper/CommandPool.hpp"
-#include "wrapper/DescriptorPool.hpp"
 
 #include "vulkan/wrapper.hpp"
 #include "vulkan/Instance.hpp"
@@ -20,7 +16,13 @@
 #include "vulkan/Swapchain.hpp"
 #include "vulkan/Pipeline.hpp"
 #include "vulkan/Framebuffer.hpp"
+
+#include "wrapper/CommandPool.hpp"
+#include "wrapper/DescriptorPool.hpp"
 #include "wrapper/Sync.hpp"
+
+#include "MemoryManager.hpp"
+#include "Texture.hpp"
 
 class Renderer {
 public:
@@ -57,6 +59,7 @@ private:
     vulkan::Framebuffer m_framebuffer;
     wrapper::CommandPool m_commandPool;
     MemoryManager m_memoryManager;
+    Texture m_testTexture;
 
     std::unique_ptr<wrapper::Buffer> m_vertexBuffer{};
     std::unique_ptr<wrapper::Buffer> m_indexBuffer{};

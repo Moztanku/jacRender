@@ -1,5 +1,5 @@
 /**
- * @file Swapchain.hpp
+ * @file vulkan/Swapchain.hpp
  * @brief This file contains the Swapchain class which manages the Vulkan swapchain (VkSwapchainKHR).
  */
 #pragma once
@@ -59,6 +59,7 @@ private:
     VkSwapchainKHR m_swapchain{VK_NULL_HANDLE};
     const VkDevice m_device{VK_NULL_HANDLE};
 
+    // TODO: Use wrapper::Image
     std::vector<VkImage> m_images{};
     std::vector<VkImageView> m_imageViews{};
 

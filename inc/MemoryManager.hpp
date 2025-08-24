@@ -64,6 +64,19 @@ public:
         VkDeviceSize dstOffset = 0
     ) -> void;
 
+    auto copy(
+        wrapper::Buffer& srcBuffer,
+        wrapper::Image& dstImage,
+        VkExtent3D extent,
+        VkDeviceSize srcOffset = 0
+    ) -> void;
+
+    auto transitionImageLayout(
+        wrapper::Image& image,
+        VkImageLayout oldLayout,
+        VkImageLayout newLayout
+    ) -> void;
+
     // [[nodiscard]]
     // auto map(const wrapper::Buffer& buffer) -> void*;
     // auto unmap(const wrapper::Buffer& buffer) -> void;

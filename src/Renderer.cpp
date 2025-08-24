@@ -51,7 +51,11 @@ Renderer::Renderer(
         m_descriptorPool.getLayout()},
     m_framebuffer{m_device, m_swapchain, m_pipeline},
     m_commandPool{m_device, m_device.getGraphicsQueue().familyIndex, m_maxFramesInFlight},
-    m_memoryManager{m_instance, m_device}
+    m_memoryManager{m_instance, m_device},
+    m_testTexture{
+        m_memoryManager,
+        std::filesystem::path{TEXTURE_DIR "texture.jpg"}
+    }
 {
     // Create vertex and index buffers
     const std::vector<Vertex> vertices = {

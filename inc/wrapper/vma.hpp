@@ -1,5 +1,5 @@
 /**
- * @file vma.hpp
+ * @file wrapper/vma.hpp
  * @brief VMA wrapper header with warning suppression
  */
 #pragma once
