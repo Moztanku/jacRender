@@ -6,48 +6,12 @@
 
 #include <vulkan/vulkan.h>
 #include "wrapper/vma.hpp"
+#include "vulkan/wrapper.hpp"
 
 namespace wrapper {
 
 enum class ImageType {
     TEXTURE_2D   // 2D texture
-};
-
-class ImageView {
-public:
-    ImageView(VkImageView view, VkDevice device)
-    : view(view), device(device) {}
-
-
-    ImageView(ImageView&& other)
-    : view(other.view), device(other.device) {
-        other.view = VK_NULL_HANDLE;
-    }
-
-    auto operator=(ImageView&& other) -> ImageView& {
-        if (this != &other) {
-            if (view != VK_NULL_HANDLE) {
-                vkDestroyImageView(device, view, nullptr);
-            }
-            view = other.view;
-            device = other.device;
-            other.view = VK_NULL_HANDLE;
-        }
-        return *this;
-    }
-
-    ~ImageView() {
-        if (view != VK_NULL_HANDLE) {
-            vkDestroyImageView(device, view, nullptr);
-            view = VK_NULL_HANDLE;
-        }
-    }
-
-    ImageView(const ImageView&) = delete;
-    auto operator=(const ImageView&) -> ImageView& = delete;
-private:
-    VkImageView view;
-    VkDevice device;
 };
 
 class Image {
@@ -62,10 +26,36 @@ public:
     , allocation(allocation)
     , allocator(allocator)
     , device(device)
-    , type(type) {}
+    , type(type)
+    {
+        VkImageViewCreateInfo viewInfo{
+            .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .image = image,
+            .viewType = VK_IMAGE_VIEW_TYPE_2D,
+            .format = VK_FORMAT_R8G8B8A8_SRGB,
+            .components = {},
+            .subresourceRange = {
+                .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                .baseMipLevel = 0,
+                .levelCount = 1,
+                .baseArrayLayer = 0,
+                .layerCount = 1
+            }
+        };
+
+        vlk::CreateImageView(
+            device,
+            &viewInfo,
+            nullptr,
+            &view
+        );
+    }
 
     Image(Image&& other) noexcept
     : image(other.image)
+    , view(other.view)
     , allocation(other.allocation)
     , allocator(other.allocator)
     , device(other.device)

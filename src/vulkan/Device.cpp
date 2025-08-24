@@ -36,7 +36,11 @@ auto get_physical_device(
         VkPhysicalDeviceMemoryProperties memoryProps;
         vlk::GetPhysicalDeviceMemoryProperties(device, &memoryProps);
 
+        VkPhysicalDeviceFeatures deviceFeatures;
+        vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
+
         if (memoryProps.memoryHeapCount > 0 &&
+            deviceFeatures.samplerAnisotropy &&
             (bestDevice == VK_NULL_HANDLE ||
              memoryProps.memoryHeaps[0].size > bestMemoryProps.memoryHeaps[0].size)) {
             bestDevice = device;
@@ -162,7 +166,8 @@ Device::Device(
     createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
     createInfo.pQueueCreateInfos = queueCreateInfos.data();
 
-    const VkPhysicalDeviceFeatures deviceFeatures{};
+    VkPhysicalDeviceFeatures deviceFeatures{};
+    deviceFeatures.samplerAnisotropy = VK_TRUE;
     createInfo.pEnabledFeatures = &deviceFeatures;
 
     if (common::DEBUG) {

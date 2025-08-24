@@ -126,7 +126,7 @@ Pipeline::Pipeline(
     rasterizer.lineWidth = 1.0f; // Default line width
 
     rasterizer.cullMode = VK_CULL_MODE_BACK_BIT; // Cull back faces
-    rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE; // Counter-clockwise is front
+    rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE; // Counter-clockwise is front
 
     rasterizer.depthBiasEnable = VK_FALSE; // No depth bias
     rasterizer.depthBiasConstantFactor = 0.0f; // No depth bias constant

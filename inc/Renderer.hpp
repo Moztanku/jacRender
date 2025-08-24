@@ -60,6 +60,7 @@ private:
     wrapper::CommandPool m_commandPool;
     MemoryManager m_memoryManager;
     Texture m_testTexture;
+    TextureSampler m_testTextureSampler;
 
     std::unique_ptr<wrapper::Buffer> m_vertexBuffer{};
     std::unique_ptr<wrapper::Buffer> m_indexBuffer{};

@@ -75,7 +75,86 @@ public:
         );
     }
 
+    ~Texture() = default;
+
+    [[nodiscard]]
+    auto getImageView() const -> VkImageView {
+        return m_Image->getView();
+    }
 
 private:
     std::unique_ptr<wrapper::Image> m_Image;
+};
+
+class TextureSampler {
+public:
+    struct Config {
+        VkFilter                magFilter               = VK_FILTER_LINEAR                  ;
+        VkFilter                minFilter               = VK_FILTER_LINEAR                  ;
+        VkSamplerAddressMode    addressModeU            = VK_SAMPLER_ADDRESS_MODE_REPEAT    ;
+        VkSamplerAddressMode    addressModeV            = VK_SAMPLER_ADDRESS_MODE_REPEAT    ;
+        VkSamplerAddressMode    addressModeW            = VK_SAMPLER_ADDRESS_MODE_REPEAT    ;
+        VkBool32                anisotropyEnable        = VK_TRUE                           ;
+        float                   maxAnisotropy           = 16.0f                             ;
+        VkBool32                compareEnable           = VK_FALSE                          ;
+        VkCompareOp             compareOp               = VK_COMPARE_OP_ALWAYS              ;
+        VkBorderColor           borderColor             = VK_BORDER_COLOR_INT_OPAQUE_BLACK  ;
+        VkBool32                unnormalizedCoordinates = VK_FALSE                          ;
+        VkSamplerMipmapMode     mipmapMode              = VK_SAMPLER_MIPMAP_MODE_LINEAR     ;
+        float                   mipLodBias              = 0.0f                              ;
+        float                   minLod                  = 0.0f                              ;
+        float                   maxLod                  = 0.0f                              ;
+    };
+
+    TextureSampler(VkDevice device)
+    : TextureSampler(device, Config{}) {}
+
+    TextureSampler(VkDevice device, const Config& config)
+    : m_Device(device)
+    {
+        VkSamplerCreateInfo samplerInfo{
+            .sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+            .pNext                   = nullptr                              ,
+            .flags                   = 0                                    ,
+            .magFilter               = config.magFilter                     ,
+            .minFilter               = config.minFilter                     ,
+            .mipmapMode              = config.mipmapMode                    ,
+            .addressModeU            = config.addressModeU                  ,
+            .addressModeV            = config.addressModeV                  ,
+            .addressModeW            = config.addressModeW                  ,
+            .mipLodBias              = config.mipLodBias                    ,
+            .anisotropyEnable        = config.anisotropyEnable              ,
+            .maxAnisotropy           = config.maxAnisotropy                 ,
+            .compareEnable           = config.compareEnable                 ,
+            .compareOp               = config.compareOp                     ,
+            .minLod                  = config.minLod                        ,
+            .maxLod                  = config.maxLod                        ,
+            .borderColor             = config.borderColor                   ,
+            .unnormalizedCoordinates = config.unnormalizedCoordinates
+        };
+
+        vkCreateSampler(m_Device, &samplerInfo, nullptr, &m_Sampler);
+    }
+
+    ~TextureSampler()
+    {
+        if (m_Sampler != VK_NULL_HANDLE) {
+            vkDestroySampler(m_Device, m_Sampler, nullptr);
+            m_Sampler = VK_NULL_HANDLE;
+        }
+    }
+
+    TextureSampler(const TextureSampler&) = delete;
+    TextureSampler(TextureSampler&&) = delete;
+    TextureSampler& operator=(const TextureSampler&) = delete;
+    TextureSampler& operator=(TextureSampler&&) = delete;
+
+    [[nodiscard]]
+    auto getSampler() const -> VkSampler {
+        return m_Sampler;
+    }
+
+private:
+    VkSampler m_Sampler;
+    VkDevice m_Device;
 };

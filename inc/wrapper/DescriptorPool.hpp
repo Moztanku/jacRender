@@ -28,10 +28,21 @@ public:
         uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
         uboLayoutBinding.pImmutableSamplers = nullptr; // Optional
 
+        VkDescriptorSetLayoutBinding samplerLayoutBinding{};
+        samplerLayoutBinding.binding = 1;
+        samplerLayoutBinding.descriptorCount = 1;
+        samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        samplerLayoutBinding.pImmutableSamplers = nullptr;
+        samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+        const std::array<VkDescriptorSetLayoutBinding, 2> bindings = {
+            uboLayoutBinding,
+            samplerLayoutBinding};
+
         VkDescriptorSetLayoutCreateInfo layoutInfo{};
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        layoutInfo.bindingCount = 1;
-        layoutInfo.pBindings = &uboLayoutBinding;
+        layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+        layoutInfo.pBindings = bindings.data();
 
         vlk::CreateDescriptorSetLayout(
             m_device,
@@ -68,9 +79,15 @@ public:
     : m_device(device)
     , m_layout(device)
     {
-        VkDescriptorPoolSize poolSize{
-            .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            .descriptorCount = descriptorCount
+        std::array<VkDescriptorPoolSize, 2> poolSizes = {
+            VkDescriptorPoolSize{
+                .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                .descriptorCount = descriptorCount
+            },
+            VkDescriptorPoolSize{
+                .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                .descriptorCount = descriptorCount
+            }
         };
 
         VkDescriptorPoolCreateInfo poolCreateInfo{
@@ -78,8 +95,8 @@ public:
             .pNext = nullptr,
             .flags = 0,
             .maxSets = descriptorCount,
-            .poolSizeCount = 1,
-            .pPoolSizes = &poolSize
+            .poolSizeCount = static_cast<uint32_t>(poolSizes.size()),
+            .pPoolSizes = poolSizes.data()
         };
 
         vlk::CreateDescriptorPool(

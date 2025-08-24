@@ -93,8 +93,7 @@ MemoryManager::MemoryManager(
 // , m_transferQueue{device.getTransferQueue()}
 , m_transferQueue{device.getGraphicsQueue()} // Using graphics queue for transfer for simplicity, TODO: change if improvement needed
 , m_commandPool{device, m_transferQueue.familyIndex}
-{
-}
+{}
 
 MemoryManager::~MemoryManager()
 {
@@ -192,20 +191,6 @@ auto MemoryManager::createImage(
     if (image == VK_NULL_HANDLE || allocation == VK_NULL_HANDLE) {
         throw std::runtime_error("Failed to create image.");
     }
-
-    VkImageViewCreateInfo viewInfo{};
-    viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    viewInfo.image = image;
-    viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    viewInfo.format = format;
-    viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    viewInfo.subresourceRange.baseMipLevel = 0;
-    viewInfo.subresourceRange.levelCount = 1;
-    viewInfo.subresourceRange.baseArrayLayer = 0;
-    viewInfo.subresourceRange.layerCount = 1;
-
-    VkImageView imageView;
-    vkCreateImageView(m_device, &viewInfo, nullptr, &imageView);
 
     return wrapper::Image(
         image,

@@ -55,14 +55,15 @@ Renderer::Renderer(
     m_testTexture{
         m_memoryManager,
         std::filesystem::path{TEXTURE_DIR "texture.jpg"}
-    }
+    },
+    m_testTextureSampler{m_device.getDevice()}
 {
     // Create vertex and index buffers
     const std::vector<Vertex> vertices = {
-        {{-0.5f, 0.5f}, {1.0f, 0.0f, 0.0f}}, // Bottom left
-        {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},  // Bottom right
-        {{0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}}, // Top right
-        {{-0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}} // Top left
+        {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+        {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
+        {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
+        {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
     };
 
     const std::vector<uint32_t> indices = {
@@ -131,19 +132,35 @@ Renderer::Renderer(
         bufferInfo.offset = 0;
         bufferInfo.range = sizeof(UBO);
 
-        VkWriteDescriptorSet descriptorWrite{};
-        descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptorWrite.dstSet = m_descriptorPool.getDescriptorSet(i);
-        descriptorWrite.dstBinding = 0;
-        descriptorWrite.dstArrayElement = 0;
-        descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        descriptorWrite.descriptorCount = 1;
-        descriptorWrite.pBufferInfo = &bufferInfo;
+        VkDescriptorImageInfo imageInfo{};
+        imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        imageInfo.imageView = m_testTexture.getImageView();
+        imageInfo.sampler = m_testTextureSampler.getSampler();
+
+        std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
+
+        // UBO
+        descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrites[0].dstSet = m_descriptorPool.getDescriptorSet(i);
+        descriptorWrites[0].dstBinding = 0;
+        descriptorWrites[0].dstArrayElement = 0;
+        descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        descriptorWrites[0].descriptorCount = 1;
+        descriptorWrites[0].pBufferInfo = &bufferInfo;
+
+        // Texture sampler
+        descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrites[1].dstSet = m_descriptorPool.getDescriptorSet(i);
+        descriptorWrites[1].dstBinding = 1;
+        descriptorWrites[1].dstArrayElement = 0;
+        descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        descriptorWrites[1].descriptorCount = 1;
+        descriptorWrites[1].pImageInfo = &imageInfo;
 
         vkUpdateDescriptorSets(
             m_device.getDevice(),
-            1,
-            &descriptorWrite,
+            static_cast<uint32_t>(descriptorWrites.size()),
+            descriptorWrites.data(),
             0,
             nullptr
         );
