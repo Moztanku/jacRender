@@ -92,11 +92,12 @@ target_compile_options(${PROJECT_NAME}
     $<$<CONFIG:Debug>:${DEBUG_FLAGS}>
     $<$<CONFIG:Release>:${RELEASE_FLAGS}>)
 
-# compile shaders
-add_subdirectory(shaders)
 target_compile_definitions(${PROJECT_NAME}
     PRIVATE
     SHADER_DIR_BASE="${CMAKE_CURRENT_SOURCE_DIR}/shaders/"
     TEXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/textures/"
 )
+
+# compile shaders
+add_subdirectory(shaders)
 add_dependencies(${PROJECT_NAME} shaders)

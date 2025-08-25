@@ -83,6 +83,29 @@ auto buffer_type_to_usage(wrapper::BufferType type) -> VkBufferUsageFlags
     }
 }
 
+auto get_image_format(wrapper::ImageType type) -> VkFormat {
+    switch (type) {
+        case wrapper::ImageType::TEXTURE_2D:
+            return VK_FORMAT_R8G8B8A8_SRGB;
+        case wrapper::ImageType::DEPTH_2D:
+            // TODO: Choose format based on device capabilities
+            return VK_FORMAT_D32_SFLOAT;
+        default:
+            throw std::invalid_argument("Unsupported image type.");
+    }
+}
+
+auto get_image_usage(wrapper::ImageType type) -> VkImageUsageFlags {
+    switch (type) {
+        case wrapper::ImageType::TEXTURE_2D:
+            return VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+        case wrapper::ImageType::DEPTH_2D:
+            return VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+        default:
+            throw std::invalid_argument("Unsupported image type.");
+    }
+}
+
 } // namespace
 
 MemoryManager::MemoryManager(
@@ -152,7 +175,6 @@ auto MemoryManager::createBuffer(
 
 auto MemoryManager::createImage(
     const VkExtent3D& extent,
-    VkFormat format,
     wrapper::ImageType type,
     MemoryUsage usage
 ) -> wrapper::Image {
@@ -166,10 +188,10 @@ auto MemoryManager::createImage(
     imageInfo.extent = extent;
     imageInfo.mipLevels = 1;
     imageInfo.arrayLayers = 1;
-    imageInfo.format = format;
+    imageInfo.format = get_image_format(type);
     imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
     imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    imageInfo.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    imageInfo.usage = get_image_usage(type);
     imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
     imageInfo.queueFamilyIndexCount = 1;
@@ -192,8 +214,36 @@ auto MemoryManager::createImage(
         throw std::runtime_error("Failed to create image.");
     }
 
+    VkImageViewCreateInfo viewInfo{};
+    viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    viewInfo.image = image;
+    viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    viewInfo.format = imageInfo.format;
+    viewInfo.components = {};
+
+    const VkImageAspectFlags aspectMask = (type == wrapper::ImageType::DEPTH_2D) ?
+        VK_IMAGE_ASPECT_DEPTH_BIT :
+        VK_IMAGE_ASPECT_COLOR_BIT;
+
+    viewInfo.subresourceRange = {
+        .aspectMask = aspectMask,
+        .baseMipLevel = 0,
+        .levelCount = 1,
+        .baseArrayLayer = 0,
+        .layerCount = 1
+    };
+
+    VkImageView view;
+    vlk::CreateImageView(
+        m_device,
+        &viewInfo,
+        nullptr,
+        &view
+    );
+
     return wrapper::Image(
         image,
+        view,
         allocation,
         m_allocator,
         m_device,

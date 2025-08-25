@@ -8,50 +8,31 @@
 #include "wrapper/vma.hpp"
 #include "vulkan/wrapper.hpp"
 
+#include <stdexcept>
+
 namespace wrapper {
 
 enum class ImageType {
-    TEXTURE_2D   // 2D texture
+    TEXTURE_2D,   // 2D texture
+    DEPTH_2D      // 2D depth image
 };
 
 class Image {
 public:
     Image(
         VkImage image,
+        VkImageView view,
         VmaAllocation allocation,
         VmaAllocator allocator,
         VkDevice device,
         ImageType type)
     : image(image)
+    , view(view)
     , allocation(allocation)
     , allocator(allocator)
     , device(device)
     , type(type)
-    {
-        VkImageViewCreateInfo viewInfo{
-            .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-            .pNext = nullptr,
-            .flags = 0,
-            .image = image,
-            .viewType = VK_IMAGE_VIEW_TYPE_2D,
-            .format = VK_FORMAT_R8G8B8A8_SRGB,
-            .components = {},
-            .subresourceRange = {
-                .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                .baseMipLevel = 0,
-                .levelCount = 1,
-                .baseArrayLayer = 0,
-                .layerCount = 1
-            }
-        };
-
-        vlk::CreateImageView(
-            device,
-            &viewInfo,
-            nullptr,
-            &view
-        );
-    }
+    {}
 
     Image(Image&& other) noexcept
     : image(other.image)

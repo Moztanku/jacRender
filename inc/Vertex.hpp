@@ -8,7 +8,7 @@
 #include <glm/glm.hpp>
 
 struct Vertex {
-    glm::vec2 position;
+    glm::vec3 position;
     glm::vec3 color;
     glm::vec2 texCoord;
 
@@ -28,7 +28,7 @@ struct Vertex {
         auto& position_attr = attributeDescriptions[0];
         position_attr.binding = 0;
         position_attr.location = 0;
-        position_attr.format = VK_FORMAT_R32G32_SFLOAT; // glm::vec2
+        position_attr.format = VK_FORMAT_R32G32B32_SFLOAT; // glm::vec3
         position_attr.offset = offsetof(Vertex, position);
 
         auto& color_attr = attributeDescriptions[1];

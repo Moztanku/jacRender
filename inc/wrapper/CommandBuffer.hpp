@@ -39,7 +39,7 @@ public:
         const VkRenderPass&,
         const VkFramebuffer&,
         const VkExtent2D&,
-        const VkClearValue& = vulkan::get_default<VkClearValue>()) -> void;
+        const vulkan::ClearColor& = vulkan::get_default<vulkan::ClearColor>()) -> void;
     auto endRenderPass() -> void;
 
     auto bind(const vulkan::Pipeline&) -> void;

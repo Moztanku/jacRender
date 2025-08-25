@@ -44,7 +44,6 @@ public:
     [[nodiscard]]
     auto createImage(
         const VkExtent3D& extent,
-        VkFormat format,
         wrapper::ImageType type,
         MemoryUsage usage = MemoryUsage::AUTO
     ) -> wrapper::Image;

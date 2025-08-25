@@ -48,7 +48,6 @@ public:
                     static_cast<uint32_t>(height),
                     1
                 },
-                VK_FORMAT_R8G8B8A8_SRGB,
                 wrapper::ImageType::TEXTURE_2D,
                 MemoryUsage::GPU_ONLY
             )

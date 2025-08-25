@@ -14,21 +14,25 @@ namespace vulkan {
 Framebuffer::Framebuffer(
     Device& device,
     const Swapchain& swapchain,
-    const Pipeline& pipeline) :
+    const Pipeline& pipeline,
+    VkImageView depthImageView) :
     m_device(device.getDevice())
 {
     m_framebuffers.reserve(
         swapchain.getImageViews().size());
 
     for (const auto& imageView : swapchain.getImageViews()) {
-        VkImageView attachments[] = { imageView };
+        std::array<VkImageView, 2> attachments = {
+            imageView,
+            depthImageView
+        };
 
         VkFramebufferCreateInfo createInfo{};
 
         createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
         createInfo.renderPass = pipeline.getRenderPass();
-        createInfo.attachmentCount = 1;
-        createInfo.pAttachments = attachments;
+        createInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+        createInfo.pAttachments = attachments.data();
         createInfo.width = swapchain.getExtent().width;
         createInfo.height = swapchain.getExtent().height;
         createInfo.layers = 1;

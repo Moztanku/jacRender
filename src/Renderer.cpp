@@ -4,8 +4,8 @@
 #include <format>
 #include <chrono>
 
-#define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
 #define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -41,34 +41,50 @@ Renderer::Renderer(
     , m_instance{vulkan::get_default_validation_layers()}
     , m_surface{m_instance, m_window}
     , m_device{m_instance, m_surface}
+    , m_memoryManager{m_instance, m_device}
     , m_swapchain{m_device, m_surface, m_window}
     , m_maxFramesInFlight{static_cast<uint8_t>(m_swapchain.getImageCount())}
     , m_descriptorPool{m_device.getDevice(), m_maxFramesInFlight}
+    , m_depthImage{
+        m_memoryManager.createImage(
+            {
+                m_swapchain.getExtent().width,
+                m_swapchain.getExtent().height,
+                1
+            },
+            wrapper::ImageType::DEPTH_2D,
+            MemoryUsage::GPU_ONLY
+        )
+    }
     , m_pipeline{
         m_device,
         m_swapchain,
         get_default_shaders(m_device),
-        m_descriptorPool.getLayout()},
-    m_framebuffer{m_device, m_swapchain, m_pipeline},
-    m_commandPool{m_device, m_device.getGraphicsQueue().familyIndex, m_maxFramesInFlight},
-    m_memoryManager{m_instance, m_device},
-    m_testTexture{
+        m_descriptorPool.getLayout()}
+    , m_framebuffer{m_device, m_swapchain, m_pipeline, m_depthImage.getView()}
+    , m_commandPool{m_device, m_device.getGraphicsQueue().familyIndex, m_maxFramesInFlight}
+    , m_testTexture{
         m_memoryManager,
         std::filesystem::path{TEXTURE_DIR "texture.jpg"}
-    },
-    m_testTextureSampler{m_device.getDevice()}
+    }
+    , m_testTextureSampler{m_device.getDevice()}
 {
     // Create vertex and index buffers
     const std::vector<Vertex> vertices = {
-        {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-        {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
-        {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-        {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
+        {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+        {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+        {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+        {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
+
+        {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+        {{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+        {{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+        {{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
     };
 
     const std::vector<uint32_t> indices = {
-        0, 1, 2, // First triangle
-        2, 3, 0  // Second triangle
+        0, 1, 2, 2, 3, 0,
+        4, 5, 6, 6, 7, 4
     };
 
     m_vertexBuffer = std::make_unique<wrapper::Buffer>(
@@ -216,7 +232,7 @@ void Renderer::renderFrame() {
         m_pipeline.getPipelineLayout());
 
     const wrapper::DrawIndexed draw_command{
-        6
+        12
     };
     m_commandBuffer.record(draw_command);
     m_commandBuffer.endRenderPass();

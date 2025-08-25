@@ -64,8 +64,13 @@ auto CommandBuffer::beginRenderPass(
     const VkRenderPass& renderPass,
     const VkFramebuffer& frameBuffer,
     const VkExtent2D& extent,
-    const VkClearValue& clearValue) -> void
+    const vulkan::ClearColor& clearValue) -> void
 {
+    std::array<VkClearValue, 2> clearValues{
+        VkClearValue{ .color = clearValue.color },
+        VkClearValue{ .depthStencil = clearValue.depthStencil }   
+    };
+
     VkRenderPassBeginInfo renderPassInfo{
         .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
         .pNext = nullptr,
@@ -75,8 +80,8 @@ auto CommandBuffer::beginRenderPass(
             .offset = {0, 0},
             .extent = extent
         },
-        .clearValueCount = 1,
-        .pClearValues = &clearValue
+        .clearValueCount = static_cast<uint32_t>(clearValues.size()),
+        .pClearValues = clearValues.data()
     };
 
     vlk::CmdBeginRenderPass(m_commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);

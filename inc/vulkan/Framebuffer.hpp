@@ -19,7 +19,8 @@ public:
     Framebuffer(
         Device& device,
         const Swapchain& swapchain,
-        const Pipeline& pipeline
+        const Pipeline& pipeline,
+        VkImageView depthImageView
     );
     ~Framebuffer();
 

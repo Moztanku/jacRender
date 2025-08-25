@@ -49,16 +49,16 @@ private:
     vulkan::Instance m_instance;
     vulkan::Surface m_surface;
     vulkan::Device m_device;
-    vulkan::Swapchain m_swapchain;
+    MemoryManager m_memoryManager;
 
-    uint8_t m_currentFrame{0};
+    vulkan::Swapchain m_swapchain;
     const uint8_t m_maxFramesInFlight;
 
     wrapper::DescriptorPool m_descriptorPool;
+    wrapper::Image m_depthImage;
     vulkan::Pipeline m_pipeline;
     vulkan::Framebuffer m_framebuffer;
     wrapper::CommandPool m_commandPool;
-    MemoryManager m_memoryManager;
     Texture m_testTexture;
     TextureSampler m_testTextureSampler;
 
@@ -69,4 +69,6 @@ private:
     std::vector<wrapper::Semaphore> m_imageAvailableVec{};
     std::vector<wrapper::Semaphore> m_renderFinishedVec{};
     std::vector<wrapper::Fence> m_inFlightVec{};
+
+    uint8_t m_currentFrame{0};
 };
