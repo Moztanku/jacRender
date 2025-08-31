@@ -256,16 +256,30 @@ auto MemoryManager::copyDataToBuffer(
     wrapper::Buffer& buffer,
     VkDeviceSize offset
 ) -> void {
-    if (buffer.getType() != wrapper::BufferType::STAGING &&
-        buffer.getType() != wrapper::BufferType::UNIFORM) {
-        throw std::invalid_argument("copyDataToBuffer currently only supports STAGING and UNIFORM buffers.");
-    }
+    using Type = wrapper::BufferType;
 
-    std::memcpy(
-        static_cast<uint8_t*>(buffer.getMappedData()) + offset,
-        data,
-        size
-    );
+    switch (buffer.getType()) {
+        case Type::VERTEX:
+        case Type::INDEX: {
+            auto stagingBuffer = createBuffer(
+                size,
+                wrapper::BufferType::STAGING
+            );
+
+            std::memcpy(stagingBuffer.getMappedData(), data, size);
+            copy(stagingBuffer, buffer, size, 0, offset);
+        } break;
+        case Type::STAGING:
+        case Type::UNIFORM: {
+            std::memcpy(
+                static_cast<uint8_t*>(buffer.getMappedData()) + offset,
+                data,
+                size
+            );
+            } break;
+        default:
+            throw std::invalid_argument("Unsupported buffer type for copyDataToBuffer.");
+    }
 }
 
 auto MemoryManager::copy(

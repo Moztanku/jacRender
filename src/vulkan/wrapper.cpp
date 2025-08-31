@@ -1137,6 +1137,28 @@ void CmdCopyBuffer(
     );
 }
 
+void CmdPushConstants(
+    VkCommandBuffer                             commandBuffer,
+    VkPipelineLayout                            layout,
+    VkShaderStageFlags                          stageFlags,
+    uint32_t                                    offset,
+    uint32_t                                    size,
+    const void*                                 pValues,
+    const std::source_location&                 location)
+{
+    EXEC_VK_FUNCTION(
+        location,
+        "Failed to push constants",
+        vkCmdPushConstants,
+        commandBuffer,
+        layout,
+        stageFlags,
+        offset,
+        size,
+        pValues
+    );
+}
+
 // Pipeline functions
 void CreateGraphicsPipelines(
     VkDevice                                    device,

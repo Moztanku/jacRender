@@ -484,6 +484,16 @@ void CmdCopyBuffer(
     const VkBufferCopy*                         pRegions,
     const std::source_location&                 location = std::source_location::current());
 
+/// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkCmdPushConstants.html
+void CmdPushConstants(
+    VkCommandBuffer                             commandBuffer,
+    VkPipelineLayout                            layout,
+    VkShaderStageFlags                          stageFlags,
+    uint32_t                                    offset,
+    uint32_t                                    size,
+    const void*                                 pValues,
+    const std::source_location&                 location = std::source_location::current());
+
 // Pipeline functions
 /// @see https://registry.khronos.org/vulkan/specs/latest/man/html/vkCreateGraphicsPipelines.html
 void CreateGraphicsPipelines(

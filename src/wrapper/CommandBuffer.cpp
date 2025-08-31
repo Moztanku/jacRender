@@ -138,6 +138,16 @@ auto CommandBuffer::set(const VkRect2D& scissors) -> void
     vlk::CmdSetScissor(m_commandBuffer, 0, 1, &scissors);
 }
 
+auto CommandBuffer::pushConstants(
+    VkPipelineLayout pipelineLayout,
+    VkShaderStageFlags stageFlags,
+    uint32_t offset,
+    uint32_t size,
+    const void* pValues) -> void
+{
+    vlk::CmdPushConstants(m_commandBuffer, pipelineLayout, stageFlags, offset, size, pValues);
+}
+
 auto CommandBuffer::copy(
     Buffer& srcBuffer,
     Buffer& dstBuffer,

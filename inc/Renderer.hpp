@@ -21,8 +21,11 @@
 #include "wrapper/DescriptorPool.hpp"
 #include "wrapper/Sync.hpp"
 
-#include "MemoryManager.hpp"
 #include "Texture.hpp"
+#include "Model.hpp"
+#include "ResourceManager.hpp"
+
+#include "PushConstants.hpp"
 
 class Renderer {
 public:
@@ -41,6 +44,41 @@ public:
     auto operator=(const Renderer&) -> Renderer& = delete;
     auto operator=(Renderer&&) -> Renderer& = delete;
 
+    auto draw(const Model& model, const glm::mat4& modelMatrix) -> void
+    {
+        auto& cmd = m_commandPool.getCmdBuffer(m_currentFrame);
+
+        for (const auto& [mesh, material] : model.getDrawables()) {
+            cmd.bind(mesh->getVertexBuffer());
+            cmd.bind(mesh->getIndexBuffer());
+
+            // for now ignore material
+
+            PushConstants pushConstants{};
+            pushConstants.model = modelMatrix;
+
+            // pushConstants.color = material->getColorTint();
+            pushConstants.color = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f); // Bright red for visibility
+            pushConstants.time = 0.0f; // TODO: pass actual time
+            pushConstants.objectId = 0; // TODO: pass actual object ID
+            pushConstants.padding[0] = 0.0f;
+            pushConstants.padding[1] = 0.0f;
+
+            cmd.pushConstants(
+                m_pipeline.getPipelineLayout(),
+                VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+                0,
+                sizeof(PushConstants),
+                &pushConstants
+            );
+
+            const wrapper::DrawIndexed draw_command{
+                mesh->getIndexCount()
+            };
+            cmd.record(draw_command);
+        }
+    }
+
     auto renderFrame() -> void;
     auto recreateSwapchain() -> void;
 
@@ -49,7 +87,8 @@ private:
     vulkan::Instance m_instance;
     vulkan::Surface m_surface;
     vulkan::Device m_device;
-    MemoryManager m_memoryManager;
+    // MemoryManager m_memoryManager;
+    ResourceManager m_resourceManager;
 
     vulkan::Swapchain m_swapchain;
     const uint8_t m_maxFramesInFlight;
@@ -62,8 +101,9 @@ private:
     Texture m_testTexture;
     TextureSampler m_testTextureSampler;
 
-    std::unique_ptr<wrapper::Buffer> m_vertexBuffer{};
-    std::unique_ptr<wrapper::Buffer> m_indexBuffer{};
+    Model m_testModel;
+    // std::unique_ptr<wrapper::Buffer> m_vertexBuffer{};
+    // std::unique_ptr<wrapper::Buffer> m_indexBuffer{};
     std::vector<wrapper::Buffer> m_uniformBuffers{};
 
     std::vector<wrapper::Semaphore> m_imageAvailableVec{};

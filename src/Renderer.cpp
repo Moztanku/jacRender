@@ -11,6 +11,7 @@
 
 #include "UBO.hpp"
 #include "Vertex.hpp"
+#include "PushConstants.hpp"
 #include "vulkan/utils.hpp"
 #include "vulkan/Shader.hpp"
 
@@ -19,16 +20,18 @@ namespace {
 [[nodiscard]]
 auto get_default_shaders(vulkan::Device& device) -> std::vector<vulkan::Shader> {
     std::vector<vulkan::Shader> shaders;
+
     shaders.emplace_back(
         device,
-        std::filesystem::path{common::SHADER_DIRECTORY} / "triangle.vert.spv",
+        std::filesystem::path{common::SHADER_DIRECTORY} / "generic.vert.spv",
         vulkan::Shader::Type::Vertex
     );
     shaders.emplace_back(
         device,
-        std::filesystem::path{common::SHADER_DIRECTORY} / "triangle.frag.spv",
+        std::filesystem::path{common::SHADER_DIRECTORY} / "generic.frag.spv",
         vulkan::Shader::Type::Fragment
     );
+
     return shaders;
 }
 
@@ -41,12 +44,12 @@ Renderer::Renderer(
     , m_instance{vulkan::get_default_validation_layers()}
     , m_surface{m_instance, m_window}
     , m_device{m_instance, m_surface}
-    , m_memoryManager{m_instance, m_device}
+    , m_resourceManager{m_instance, m_device}
     , m_swapchain{m_device, m_surface, m_window}
     , m_maxFramesInFlight{static_cast<uint8_t>(m_swapchain.getImageCount())}
     , m_descriptorPool{m_device.getDevice(), m_maxFramesInFlight}
     , m_depthImage{
-        m_memoryManager.createImage(
+        m_resourceManager.getMemoryManager().createImage(
             {
                 m_swapchain.getExtent().width,
                 m_swapchain.getExtent().height,
@@ -64,78 +67,18 @@ Renderer::Renderer(
     , m_framebuffer{m_device, m_swapchain, m_pipeline, m_depthImage.getView()}
     , m_commandPool{m_device, m_device.getGraphicsQueue().familyIndex, m_maxFramesInFlight}
     , m_testTexture{
-        m_memoryManager,
+        m_resourceManager.getMemoryManager(),
         std::filesystem::path{TEXTURE_DIR "texture.jpg"}
     }
     , m_testTextureSampler{m_device.getDevice()}
+    , m_testModel{m_resourceManager.loadModel("models/survival_backpack_2.fbx")}
 {
-    // Create vertex and index buffers
-    const std::vector<Vertex> vertices = {
-        {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-        {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-        {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-        {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
-
-        {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-        {{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-        {{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-        {{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
-    };
-
-    const std::vector<uint32_t> indices = {
-        0, 1, 2, 2, 3, 0,
-        4, 5, 6, 6, 7, 4
-    };
-
-    m_vertexBuffer = std::make_unique<wrapper::Buffer>(
-        m_memoryManager.createBuffer(
-            sizeof(Vertex) * vertices.size(),
-            wrapper::BufferType::VERTEX
-        )
-    );
-    m_indexBuffer = std::make_unique<wrapper::Buffer>(
-        m_memoryManager.createBuffer(
-            sizeof(uint32_t) * indices.size(),
-            wrapper::BufferType::INDEX
-        )
-    );
-
-    auto staging_buffer = m_memoryManager.createBuffer(
-        sizeof(Vertex) * vertices.size(),
-        wrapper::BufferType::STAGING,
-        MemoryUsage::CPU_TO_GPU
-    );
-    m_memoryManager.copyDataToBuffer(
-        vertices.data(),
-        sizeof(Vertex) * vertices.size(),
-        staging_buffer
-    );
-    auto staging_index_buffer = m_memoryManager.createBuffer(
-        sizeof(uint32_t) * indices.size(),
-        wrapper::BufferType::STAGING,
-        MemoryUsage::CPU_TO_GPU
-    );
-    m_memoryManager.copyDataToBuffer(
-        indices.data(),
-        sizeof(uint32_t) * indices.size(),
-        staging_index_buffer
-    );
-
-    m_memoryManager.copy(
-        staging_buffer,
-        *m_vertexBuffer
-    );
-    m_memoryManager.copy(
-        staging_index_buffer,
-        *m_indexBuffer
-    );
-
     // Create uniform buffers
     m_uniformBuffers.reserve(m_maxFramesInFlight);
 
     for (uint8_t i = 0; i < m_maxFramesInFlight; ++i) {
         m_uniformBuffers.emplace_back(
-            m_memoryManager.createBuffer(
+            m_resourceManager.getMemoryManager().createBuffer(
                 sizeof(UBO),
                 wrapper::BufferType::UNIFORM
             )
@@ -220,26 +163,21 @@ void Renderer::renderFrame() {
     m_commandBuffer.beginRenderPass(
         m_pipeline.getRenderPass(),
         m_framebuffer.getFramebuffer(imageIndex),
-        m_swapchain.getExtent()
+        m_swapchain.getExtent(),
+        vulkan::ClearColor{
+            .color = {.float32 = {0.2f, 0.3f, 0.8f, 1.0f}}, // Nice blue background
+            .depthStencil = {1.0f, 0}
+        }
     );
     m_commandBuffer.set(m_swapchain.getViewport());
     m_commandBuffer.set(m_swapchain.getScissor());
     m_commandBuffer.bind(m_pipeline);
-    m_commandBuffer.bind(*m_vertexBuffer);
-    m_commandBuffer.bind(*m_indexBuffer);
+    // m_commandBuffer.bind(*m_vertexBuffer);
+    // m_commandBuffer.bind(*m_indexBuffer);
     m_commandBuffer.bind(
         m_descriptorPool.getDescriptorSet(m_currentFrame),
         m_pipeline.getPipelineLayout());
 
-    const wrapper::DrawIndexed draw_command{
-        12
-    };
-    m_commandBuffer.record(draw_command);
-    m_commandBuffer.endRenderPass();
-
-    m_commandBuffer.end();
-
-    // 3.5 Update uniform buffer for the current frame
     static uint64_t millisecond_start = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::system_clock::now().time_since_epoch()
     ).count();
@@ -250,15 +188,32 @@ void Renderer::renderFrame() {
 
     const float seconds = static_cast<float>(millisecond_now - millisecond_start) / 1000.0f;
 
-    static UBO ubo{};
-    ubo.model = glm::rotate(
-        glm::mat4(1.0f),
-        seconds * glm::radians(90.0f),
-        glm::vec3(0.0f, 0.0f, 1.0f)
+    const glm::mat4 modelMatrix = glm::scale(
+        glm::rotate(
+            glm::mat4(1.0f),
+            seconds * glm::radians(90.0f),
+            glm::vec3(0.0f, 0.0f, 1.0f)
+        ),
+        glm::vec3(0.02f, 0.02f, 0.02f)  // Scale down the model
     );
 
+    // Debug: print model info
+    static bool printed = false;
+    if (!printed) {
+        std::println("Model has {} drawables", m_testModel.getDrawables().size());
+        printed = true;
+    }
+    
+    draw(m_testModel, modelMatrix);
+
+    m_commandBuffer.endRenderPass();
+
+    m_commandBuffer.end();
+
+    // 3.5 Update uniform buffer for the current frame (now without model matrix)
+    static UBO ubo{};
     ubo.view = glm::lookAt(
-        glm::vec3(2.0f, 2.0f, 2.0f),
+        glm::vec3(10.0f, 10.0f, 10.0f),  // Move camera further back
         glm::vec3(0.0f, 0.0f, 0.0f),
         glm::vec3(0.0f, 1.0f, 0.0f)
     );
@@ -267,11 +222,11 @@ void Renderer::renderFrame() {
         glm::radians(45.0f),
         static_cast<float>(m_swapchain.getExtent().width) / static_cast<float>(m_swapchain.getExtent().height),
         0.1f,
-        10.0f
+        100.0f  // Increase far plane
     );
     ubo.proj[1][1] *= -1; // Vulkan uses a different coordinate system
 
-    m_memoryManager.copyDataToBuffer(
+    m_resourceManager.getMemoryManager().copyDataToBuffer(
         &ubo,
         sizeof(ubo),
         m_uniformBuffers[m_currentFrame]

@@ -49,6 +49,19 @@ public:
     auto set(const VkViewport&) -> void;
     auto set(const VkRect2D& scissors) -> void;
 
+    /// @brief Push constants to the command buffer
+    /// @param pipelineLayout The pipeline layout containing the push constant range
+    /// @param stageFlags Which shader stages can access the constants
+    /// @param offset Offset within the push constant range
+    /// @param size Size of the data to push
+    /// @param pValues Pointer to the data to push
+    auto pushConstants(
+        VkPipelineLayout pipelineLayout,
+        VkShaderStageFlags stageFlags,
+        uint32_t offset,
+        uint32_t size,
+        const void* pValues) -> void;
+
     /// @brief Record a command for copying data from one buffer to another
     auto copy(
         Buffer& srcBuffer,

@@ -73,6 +73,11 @@ public:
             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
         );
     }
+    Texture(Texture&& other) = default;
+
+    Texture(const Texture&) = delete;
+    auto operator=(const Texture&) -> Texture& = delete;
+    auto operator=(Texture&&) -> Texture& = delete;
 
     ~Texture() = default;
 

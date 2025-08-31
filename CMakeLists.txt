@@ -25,6 +25,7 @@ set(RES_DIR ${CMAKE_CURRENT_SOURCE_DIR}/res)
 find_package(Vulkan REQUIRED)
 find_package(glfw3 REQUIRED)
 find_package(glm REQUIRED)
+find_package(assimp REQUIRED)
 
 # Fetch external dependencies
 include(FetchContent)
@@ -85,7 +86,8 @@ target_link_libraries(${PROJECT_NAME}
     glfw
     glm
     stb
-    VulkanMemoryAllocator)
+    VulkanMemoryAllocator
+    assimp)
 
 target_compile_options(${PROJECT_NAME}
     PRIVATE

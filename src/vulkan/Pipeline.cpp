@@ -3,6 +3,7 @@
 #include <stdexcept>
 #include <format>
 
+#include "PushConstants.hpp"
 #include "Vertex.hpp"
 #include "common/defs.hpp"
 #include "vulkan/utils.hpp"
@@ -80,11 +81,11 @@ Pipeline::Pipeline(
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 
-    const auto bindingDescription = Vertex::get_binding_description();
+    const auto bindingDescription = GenericVertex::get_binding_description();
     vertexInputInfo.vertexBindingDescriptionCount = 1;
     vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
 
-    const auto attributeDescriptions = Vertex::get_attribute_descriptions();
+    const auto attributeDescriptions = GenericVertex::get_attribute_descriptions();
     vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
     vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 
@@ -127,6 +128,8 @@ Pipeline::Pipeline(
 
     rasterizer.cullMode = VK_CULL_MODE_BACK_BIT; // Cull back faces
     rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE; // Counter-clockwise is front
+    // rasterizer.cullMode = VK_CULL_MODE_NONE;
+    // rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
 
     rasterizer.depthBiasEnable = VK_FALSE; // No depth bias
     rasterizer.depthBiasConstantFactor = 0.0f; // No depth bias constant
@@ -322,13 +325,19 @@ auto Pipeline::create_pipeline_layout(VkDescriptorSetLayout descriptorSetLayout)
 {
     VkPipelineLayout pipelineLayout{VK_NULL_HANDLE};
 
+    // Define push constant range for vertex and fragment shaders
+    VkPushConstantRange pushConstantRange{};
+    pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+    pushConstantRange.offset = 0;
+    pushConstantRange.size = sizeof(SimplePushConstants);
+
     // Setup the pipeline layout, which describes the resources used by the pipeline
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutInfo.setLayoutCount = 1;
     pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
-    pipelineLayoutInfo.pushConstantRangeCount = 0; // No push constants for now
-    pipelineLayoutInfo.pPushConstantRanges = nullptr; // No push constants
+    pipelineLayoutInfo.pushConstantRangeCount = 1; // We have one push constant range
+    pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange; // Push constant range
 
     vlk::CreatePipelineLayout(
         m_device,
