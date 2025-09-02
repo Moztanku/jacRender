@@ -2,8 +2,6 @@
 add_custom_target(shaders)
 
 set(SHADER_SOURCES
-    triangle.vert
-    triangle.frag
     generic.vert
     generic.frag
 )

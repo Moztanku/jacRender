@@ -26,8 +26,7 @@ public:
         drawables.reserve(m_meshes.size());
 
         for (const auto& mesh : m_meshes) {
-            // const Material* material = &m_materials[mesh.getMaterialIndex()];
-            const Material* material = nullptr;
+            const Material* material = &m_materials[mesh.getMaterialIndex()];
             drawables.emplace_back(&mesh, material);
         }
 

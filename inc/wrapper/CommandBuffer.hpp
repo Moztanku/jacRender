@@ -45,6 +45,10 @@ public:
     auto bind(const vulkan::Pipeline&) -> void;
     auto bind(const Buffer&) -> void;
     auto bind(const VkDescriptorSet&, const VkPipelineLayout&) -> void;
+    auto bindDescriptorSets(
+        const std::vector<VkDescriptorSet>& descriptorSets,
+        const VkPipelineLayout& pipelineLayout,
+        uint32_t firstSet = 0) -> void;
 
     auto set(const VkViewport&) -> void;
     auto set(const VkRect2D& scissors) -> void;

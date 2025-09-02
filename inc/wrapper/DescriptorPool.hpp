@@ -13,83 +13,71 @@
 
 #include "vulkan/wrapper.hpp"
 
+#include "ShaderDefinitions.hpp"
+
 namespace wrapper {
 
-class DescriptorSetLayout {
-public:
-    DescriptorSetLayout(VkDevice device) :
-        m_device{device}
-    {
-        VkDescriptorSetLayoutBinding uboLayoutBinding{};
-        uboLayoutBinding.binding = 0;
-        uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        uboLayoutBinding.descriptorCount = 1;
+// class DescriptorSetLayout {
+// public:
+//     DescriptorSetLayout(VkDevice device, const std::span<VkDescriptorSetLayoutBinding> bindings) :
+//         m_device{device}
+//     {
+//         VkDescriptorSetLayoutCreateInfo layoutInfo{};
+//         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+//         layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+//         layoutInfo.pBindings = bindings.data();
 
-        uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-        uboLayoutBinding.pImmutableSamplers = nullptr; // Optional
+//         vlk::CreateDescriptorSetLayout(
+//             m_device,
+//             &layoutInfo,
+//             nullptr,
+//             &m_layout
+//         );
+//     }
 
-        VkDescriptorSetLayoutBinding samplerLayoutBinding{};
-        samplerLayoutBinding.binding = 1;
-        samplerLayoutBinding.descriptorCount = 1;
-        samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        samplerLayoutBinding.pImmutableSamplers = nullptr;
-        samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+//     ~DescriptorSetLayout() {
+//         if (m_layout != VK_NULL_HANDLE) {
+//             vlk::DestroyDescriptorSetLayout(m_device, m_layout, nullptr);
+//         }
+//     }
 
-        const std::array<VkDescriptorSetLayoutBinding, 2> bindings = {
-            uboLayoutBinding,
-            samplerLayoutBinding};
+//     DescriptorSetLayout(const DescriptorSetLayout&) = delete;
+//     DescriptorSetLayout& operator=(const DescriptorSetLayout&) = delete;
+//     DescriptorSetLayout(DescriptorSetLayout&&) = delete;
+//     DescriptorSetLayout& operator=(DescriptorSetLayout&&) = delete;
 
-        VkDescriptorSetLayoutCreateInfo layoutInfo{};
-        layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
-        layoutInfo.pBindings = bindings.data();
+//     [[nodiscard]]
+//     auto getLayout() noexcept -> VkDescriptorSetLayout& { return m_layout; }
 
-        vlk::CreateDescriptorSetLayout(
-            m_device,
-            &layoutInfo,
-            nullptr,
-            &m_layout
-        );
-    }
-
-    ~DescriptorSetLayout() {
-        if (m_layout != VK_NULL_HANDLE) {
-            vlk::DestroyDescriptorSetLayout(m_device, m_layout, nullptr);
-        }
-    }
-
-    DescriptorSetLayout(const DescriptorSetLayout&) = delete;
-    DescriptorSetLayout& operator=(const DescriptorSetLayout&) = delete;
-    DescriptorSetLayout(DescriptorSetLayout&&) = delete;
-    DescriptorSetLayout& operator=(DescriptorSetLayout&&) = delete;
-
-    [[nodiscard]]
-    auto getLayout() noexcept -> VkDescriptorSetLayout& { return m_layout; }
-
-private:
-    VkDescriptorSetLayout m_layout;
-    VkDevice m_device;
-};
+// private:
+//     VkDescriptorSetLayout m_layout;
+//     VkDevice m_device;
+// };
 
 class DescriptorPool {
 public:
     DescriptorPool(
         VkDevice device,
-        uint32_t descriptorCount)
-    : m_device(device)
-    , m_layout(device)
+        VkDescriptorSetLayout layout,
+        const std::span<VkDescriptorPoolSize> poolSizes)
+    : DescriptorPool(device, layout, poolSizes, poolSizes[0].descriptorCount)
     {
-        std::array<VkDescriptorPoolSize, 2> poolSizes = {
-            VkDescriptorPoolSize{
-                .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                .descriptorCount = descriptorCount
-            },
-            VkDescriptorPoolSize{
-                .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                .descriptorCount = descriptorCount
+        for (const auto& size : poolSizes) {
+            if (size.descriptorCount != poolSizes[0].descriptorCount) {
+                throw std::invalid_argument("All descriptor counts in poolSizes must be the same when using this constructor");
             }
-        };
+        }
+    }
 
+    DescriptorPool(
+        VkDevice device,
+        VkDescriptorSetLayout layout,
+        const std::span<VkDescriptorPoolSize> poolSizes,
+        uint32_t descriptorCount,
+        bool allocateNow = true)
+    : m_device(device)
+    , m_layout(layout)
+    {
         VkDescriptorPoolCreateInfo poolCreateInfo{
             .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
             .pNext = nullptr,
@@ -114,24 +102,26 @@ public:
 
         m_descriptorSets.reserve(descriptorCount);
 
-        std::vector<VkDescriptorSetLayout> vklayouts(descriptorCount, m_layout.getLayout());
-        std::vector<VkDescriptorSet> vkdescriptorSets(descriptorCount, VK_NULL_HANDLE);
+        if (allocateNow) {
+            std::vector<VkDescriptorSetLayout> vklayouts(descriptorCount, m_layout);
+            std::vector<VkDescriptorSet> vkdescriptorSets(descriptorCount, VK_NULL_HANDLE);
 
-        VkDescriptorSetAllocateInfo allocInfo{
-            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-            .pNext = nullptr,
-            .descriptorPool = m_descriptorPool,
-            .descriptorSetCount = descriptorCount,
-            .pSetLayouts = vklayouts.data()
-        };
+            VkDescriptorSetAllocateInfo allocInfo{
+                .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+                .pNext = nullptr,
+                .descriptorPool = m_descriptorPool,
+                .descriptorSetCount = descriptorCount,
+                .pSetLayouts = vklayouts.data()
+            };
 
-        vlk::AllocateDescriptorSets(
-            m_device,
-            &allocInfo,
-            vkdescriptorSets.data()
-        );
+            vlk::AllocateDescriptorSets(
+                m_device,
+                &allocInfo,
+                vkdescriptorSets.data()
+            );
 
-        m_descriptorSets = std::move(vkdescriptorSets);
+            m_descriptorSets = std::move(vkdescriptorSets);
+        }
     }
 
     ~DescriptorPool()
@@ -147,6 +137,11 @@ public:
             vlk::DestroyDescriptorPool(m_device, m_descriptorPool, nullptr);
             m_descriptorPool = VK_NULL_HANDLE;
         }
+
+        if (m_layout != VK_NULL_HANDLE) {
+            vlk::DestroyDescriptorSetLayout(m_device, m_layout, nullptr);
+            m_layout = VK_NULL_HANDLE;
+        }
     }
 
     DescriptorPool(const DescriptorPool&) = delete;
@@ -158,7 +153,7 @@ public:
     auto getDescriptorPool() noexcept -> VkDescriptorPool& { return m_descriptorPool; }
 
     [[nodiscard]]
-    auto getLayout() noexcept -> VkDescriptorSetLayout& { return m_layout.getLayout(); }
+    auto getLayout() noexcept -> VkDescriptorSetLayout& { return m_layout; }
 
     [[nodiscard]]
     auto getDescriptorSet(size_t index) -> VkDescriptorSet& {
@@ -172,7 +167,7 @@ private:
     VkDescriptorPool m_descriptorPool;
     VkDevice m_device;
 
-    DescriptorSetLayout m_layout;
+    VkDescriptorSetLayout m_layout;
     std::vector<VkDescriptorSet> m_descriptorSets;
 };
 

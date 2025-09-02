@@ -13,19 +13,29 @@
 #include <print>
 #include <stack>
 
-#include "Vertex.hpp"
 #include "Model.hpp"
 #include "MemoryManager.hpp"
 
 class ResourceManager {
 public:
     ResourceManager(vulkan::Instance& instance, vulkan::Device& device)
-    : memoryManager(instance, device) {}
+    : memoryManager(instance, device)
+    {
+        if (!defaultTextureSampler) {
+            defaultTextureSampler = std::make_shared<TextureSampler>(device.getDevice());
+        }
+    }
 
     ResourceManager(const ResourceManager&) = delete;
     ResourceManager(ResourceManager&&) = delete;
     auto operator=(const ResourceManager&) -> ResourceManager& = delete;
     auto operator=(ResourceManager&&) -> ResourceManager& = delete;
+
+    ~ResourceManager() {
+        // Reset the static texture sampler when the last ResourceManager is destroyed
+        // This ensures it gets destroyed before the VkDevice
+        defaultTextureSampler.reset();
+    }
 
     [[nodiscard]]
     auto loadModel(std::string_view filepath) -> Model {
@@ -42,52 +52,14 @@ public:
         }
 
         std::vector<Mesh> meshes = load_meshes(scene);
-        // meshes.reserve(scene->mNumMeshes);
 
-        // for (aiMesh* mesh : std::span{scene->mMeshes, scene->mNumMeshes}) {
-        //     meshes.emplace_back(memoryManager, mesh);
-        // }
-
-        aiNode* node = scene->mRootNode;
+        const auto directory = filepath.substr(0, filepath.find_last_of("\\/"));
+        std::vector<Material> materials = load_materials(scene, directory);
 
         return Model{
             std::move(meshes),
-            {}
+            std::move(materials)
         };
-
-        // scene->
-
-        // if (scene->mNumMeshes != 1) {
-        //     throw std::runtime_error("Only single-mesh models are supported: " + std::string(filepath));
-        // }
-
-        // aiMesh* mesh = scene->mMeshes[0];
-
-        // std::vector<GenericVertex> vertices;
-        // std::vector<uint32_t> indices;
-
-        // vertices.reserve(mesh->mNumVertices);
-        // indices.reserve(mesh->mNumFaces * 3);
-
-        // #define CHECK_MESH_ATTR(attr) \
-        //     std::println("{}: {}", #attr, mesh -> attr ? "present" : "missing")
-
-        // CHECK_MESH_ATTR(HasBones());
-        // CHECK_MESH_ATTR(HasFaces());
-        // CHECK_MESH_ATTR(HasNormals());
-        // CHECK_MESH_ATTR(HasPositions());
-        // CHECK_MESH_ATTR(HasTangentsAndBitangents());
-        // CHECK_MESH_ATTR(HasTextureCoords(0));
-        // CHECK_MESH_ATTR(HasVertexColors(0));
-
-        // #undef CHECK_MESH_ATTR
-
-        // for (uint32_t i = 0; i < mesh->mNumVertices; i++) {
-        //     GenericVertex vertex{};
-
-        //     const aiVector3D& pos = mesh->
-            
-        // }
     }
 
     [[nodiscard]]
@@ -96,6 +68,8 @@ public:
 private:
     Assimp::Importer importer;
     MemoryManager memoryManager;
+
+    inline static std::shared_ptr<TextureSampler> defaultTextureSampler{nullptr};
 
     [[nodiscard]]
     auto load_meshes(const aiScene* scene) -> std::vector<Mesh> {
@@ -131,12 +105,20 @@ private:
     }
 
     [[nodiscard]]
-    auto get_materials(const aiScene* scene) -> std::vector<Material> {
+    auto load_materials(const aiScene* scene, std::string_view directory) -> std::vector<Material> {
         std::vector<Material> materials;
         materials.reserve(scene->mNumMaterials);
 
+        for (size_t i = 0; i < scene->mNumMaterials; i++) {
+            aiMaterial* material = scene->mMaterials[i];
+            materials.emplace_back(
+                memoryManager,
+                *defaultTextureSampler,
+                material,
+                directory
+            );
+        }
 
-
-        return materials;
+        return materials;   
     }
 };

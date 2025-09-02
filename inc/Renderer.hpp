@@ -7,7 +7,6 @@
 
 #include <memory>
 
-
 #include "vulkan/wrapper.hpp"
 #include "vulkan/Instance.hpp"
 #include "vulkan/Window.hpp"
@@ -24,8 +23,6 @@
 #include "Texture.hpp"
 #include "Model.hpp"
 #include "ResourceManager.hpp"
-
-#include "PushConstants.hpp"
 
 class Renderer {
 public:
@@ -52,13 +49,18 @@ public:
             cmd.bind(mesh->getVertexBuffer());
             cmd.bind(mesh->getIndexBuffer());
 
-            // for now ignore material
+            // Bind both global descriptor set (set 0) and material descriptor set (set 1)
+            std::vector<VkDescriptorSet> descriptorSets = {
+                m_descriptorPool.getDescriptorSet(m_currentFrame),  // Global set
+                m_resourceManager.getMemoryManager().getDescriptorSet(0)                        // Material set
+            };
+            cmd.bindDescriptorSets(descriptorSets, m_pipeline.getPipelineLayout());
 
             PushConstants pushConstants{};
             pushConstants.model = modelMatrix;
 
             // pushConstants.color = material->getColorTint();
-            pushConstants.color = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f); // Bright red for visibility
+            pushConstants.color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f); // White for full alpha
             pushConstants.time = 0.0f; // TODO: pass actual time
             pushConstants.objectId = 0; // TODO: pass actual object ID
             pushConstants.padding[0] = 0.0f;
@@ -98,13 +100,9 @@ private:
     vulkan::Pipeline m_pipeline;
     vulkan::Framebuffer m_framebuffer;
     wrapper::CommandPool m_commandPool;
-    Texture m_testTexture;
-    TextureSampler m_testTextureSampler;
 
     Model m_testModel;
-    // std::unique_ptr<wrapper::Buffer> m_vertexBuffer{};
-    // std::unique_ptr<wrapper::Buffer> m_indexBuffer{};
-    std::vector<wrapper::Buffer> m_uniformBuffers{};
+    std::vector<wrapper::Buffer> m_cameraUBOs{};
 
     std::vector<wrapper::Semaphore> m_imageAvailableVec{};
     std::vector<wrapper::Semaphore> m_renderFinishedVec{};

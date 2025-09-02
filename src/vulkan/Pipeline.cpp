@@ -3,8 +3,7 @@
 #include <stdexcept>
 #include <format>
 
-#include "PushConstants.hpp"
-#include "Vertex.hpp"
+#include "ShaderDefinitions.hpp"
 #include "common/defs.hpp"
 #include "vulkan/utils.hpp"
 
@@ -52,7 +51,9 @@ Pipeline::Pipeline(
     Device& device,
     const Swapchain& swapchain,
     const std::vector<Shader>& shaders,
-    VkDescriptorSetLayout descriptorSetLayout) :
+    VkDescriptorSetLayout globalSetLayout,
+    VkDescriptorSetLayout materialSetLayout,
+    VkDescriptorSetLayout instanceSetLayout) :
     m_device{device.getDevice()}
 {
     if (shaders.empty()) {
@@ -62,7 +63,10 @@ Pipeline::Pipeline(
     // Create the render pass and pipeline layout
     // These are essential for the graphics pipeline to function
     m_renderPass = create_render_pass(swapchain);
-    m_pipelineLayout = create_pipeline_layout(descriptorSetLayout);
+    m_pipelineLayout = create_pipeline_layout(
+        globalSetLayout,
+        materialSetLayout,
+        instanceSetLayout);
 
     // Get the shader stages, which are the entry points for the shaders in our pipeline
     const auto shaderStages = create_shader_stages(shaders);
@@ -81,11 +85,11 @@ Pipeline::Pipeline(
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 
-    const auto bindingDescription = GenericVertex::get_binding_description();
+    const auto bindingDescription = Vertex::get_binding_description();
     vertexInputInfo.vertexBindingDescriptionCount = 1;
     vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
 
-    const auto attributeDescriptions = GenericVertex::get_attribute_descriptions();
+    const auto attributeDescriptions = Vertex::get_attribute_descriptions();
     vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
     vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 
@@ -321,7 +325,10 @@ auto Pipeline::create_render_pass(const Swapchain& swapchain) -> VkRenderPass
     return renderPass;
 }
 
-auto Pipeline::create_pipeline_layout(VkDescriptorSetLayout descriptorSetLayout) -> VkPipelineLayout
+auto Pipeline::create_pipeline_layout(
+        VkDescriptorSetLayout globalSetLayout,
+        VkDescriptorSetLayout materialSetLayout,
+        VkDescriptorSetLayout instanceSetLayout) -> VkPipelineLayout
 {
     VkPipelineLayout pipelineLayout{VK_NULL_HANDLE};
 
@@ -329,13 +336,16 @@ auto Pipeline::create_pipeline_layout(VkDescriptorSetLayout descriptorSetLayout)
     VkPushConstantRange pushConstantRange{};
     pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
     pushConstantRange.offset = 0;
-    pushConstantRange.size = sizeof(SimplePushConstants);
+    pushConstantRange.size = sizeof(PushConstants);
+
+    assert(instanceSetLayout == VK_NULL_HANDLE);
+    std::array<VkDescriptorSetLayout, 2> setLayouts = {globalSetLayout, materialSetLayout};
 
     // Setup the pipeline layout, which describes the resources used by the pipeline
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 1;
-    pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
+    pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(setLayouts.size());
+    pipelineLayoutInfo.pSetLayouts = setLayouts.data();
     pipelineLayoutInfo.pushConstantRangeCount = 1; // We have one push constant range
     pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange; // Push constant range
 

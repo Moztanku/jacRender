@@ -128,6 +128,22 @@ auto CommandBuffer::bind(const VkDescriptorSet& descriptorSet, const VkPipelineL
         nullptr);
 }
 
+auto CommandBuffer::bindDescriptorSets(
+    const std::vector<VkDescriptorSet>& descriptorSets,
+    const VkPipelineLayout& pipelineLayout,
+    uint32_t firstSet) -> void
+{
+    vlk::CmdBindDescriptorSets(
+        m_commandBuffer,
+        VK_PIPELINE_BIND_POINT_GRAPHICS,
+        pipelineLayout,
+        firstSet,
+        static_cast<uint32_t>(descriptorSets.size()),
+        descriptorSets.data(),
+        0,
+        nullptr);
+}
+
 auto CommandBuffer::set(const VkViewport& viewport) -> void
 {
     vlk::CmdSetViewport(m_commandBuffer, 0, 1, &viewport);

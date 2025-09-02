@@ -13,6 +13,7 @@
 #include "wrapper/Image.hpp"
 #include "wrapper/Queue.hpp"
 #include "wrapper/CommandPool.hpp"
+#include "wrapper/DescriptorPool.hpp"
 #include "vulkan/Instance.hpp"
 #include "vulkan/Device.hpp"
 
@@ -76,6 +77,22 @@ public:
         VkImageLayout newLayout
     ) -> void;
 
+    // TODO: descriptor sets management
+    [[nodiscard]]
+    auto getDescriptorSet(size_t idx) -> VkDescriptorSet {
+        return m_descriptorPool.getDescriptorSet(idx);
+    }
+
+    [[nodiscard]]
+    auto getLayout() -> VkDescriptorSetLayout {
+        return m_descriptorPool.getLayout();
+    }
+
+    [[nodiscard]]
+    auto getDevice() -> VkDevice {
+        return m_device;
+    }
+
     // [[nodiscard]]
     // auto map(const wrapper::Buffer& buffer) -> void*;
     // auto unmap(const wrapper::Buffer& buffer) -> void;
@@ -91,6 +108,9 @@ public:
 private:
     VmaAllocator m_allocator;
     VkDevice m_device;
+
+    // Descriptors
+    wrapper::DescriptorPool m_descriptorPool;
 
     // Transfer
     wrapper::Queue& m_transferQueue;
