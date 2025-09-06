@@ -65,8 +65,8 @@ public:
 
             // Bind both global descriptor set (set 0) and material descriptor set (set 1)
             std::vector<VkDescriptorSet> descriptorSets = {
-                m_descriptorPool.getDescriptorSet(m_currentFrame),  // Global set
-                m_resourceManager.getMemoryManager().getDescriptorSet(0)                        // Material set
+                m_globalDescriptorSets[m_currentFrame],
+                material->m_descriptorSet
             };
             cmd.bindDescriptorSets(descriptorSets, m_pipeline.getPipelineLayout());
 
@@ -110,6 +110,8 @@ private:
     const uint8_t m_maxFramesInFlight;
 
     wrapper::DescriptorPool m_descriptorPool;
+    std::vector<VkDescriptorSet> m_globalDescriptorSets;
+
     wrapper::Image m_depthImage;
     vulkan::Pipeline m_pipeline;
     vulkan::Framebuffer m_framebuffer;

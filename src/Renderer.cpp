@@ -52,6 +52,9 @@ Renderer::Renderer(
         shader::get_global_desc_pool_sizes(m_maxFramesInFlight),
         m_maxFramesInFlight
     }
+    , m_globalDescriptorSets{
+        m_descriptorPool.allocateDescriptorSets(m_maxFramesInFlight)
+    }
     , m_depthImage{
         m_resourceManager.getMemoryManager().createImage(
             {
@@ -93,7 +96,7 @@ Renderer::Renderer(
 
         std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
         descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptorWrites[0].dstSet = m_descriptorPool.getDescriptorSet(i);
+        descriptorWrites[0].dstSet = m_globalDescriptorSets[i];
         descriptorWrites[0].dstBinding = 0;
         descriptorWrites[0].dstArrayElement = 0;
         descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;

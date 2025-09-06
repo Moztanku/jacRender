@@ -21,8 +21,7 @@ public:
         VkDevice device,
         VkDescriptorSetLayout layout,
         const std::vector<VkDescriptorPoolSize>& poolSizes,
-        uint32_t descriptorCount,
-        bool allocateNow = true)
+        uint32_t maxSets)
     : m_device(device)
     , m_layout(layout)
     {
@@ -30,7 +29,7 @@ public:
             .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
             .pNext = nullptr,
             .flags = 0,
-            .maxSets = descriptorCount,
+            .maxSets = maxSets,
             .poolSizeCount = static_cast<uint32_t>(poolSizes.size()),
             .pPoolSizes = poolSizes.data()
         };
@@ -44,32 +43,11 @@ public:
 
         if (m_descriptorPool == VK_NULL_HANDLE) {
             throw std::runtime_error(
-                std::format("Failed to create descriptor pool for {} descriptors", descriptorCount)
+                std::format("Failed to create descriptor pool for {} descriptors", maxSets)
             );
         }
 
-        m_descriptorSets.reserve(descriptorCount);
-
-        if (allocateNow) {
-            std::vector<VkDescriptorSetLayout> vklayouts(descriptorCount, m_layout);
-            std::vector<VkDescriptorSet> vkdescriptorSets(descriptorCount, VK_NULL_HANDLE);
-
-            VkDescriptorSetAllocateInfo allocInfo{
-                .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-                .pNext = nullptr,
-                .descriptorPool = m_descriptorPool,
-                .descriptorSetCount = descriptorCount,
-                .pSetLayouts = vklayouts.data()
-            };
-
-            vlk::AllocateDescriptorSets(
-                m_device,
-                &allocInfo,
-                vkdescriptorSets.data()
-            );
-
-            m_descriptorSets = std::move(vkdescriptorSets);
-        }
+        m_descriptorSets.reserve(maxSets);
     }
 
     ~DescriptorPool()
@@ -104,11 +82,35 @@ public:
     auto getLayout() noexcept -> VkDescriptorSetLayout& { return m_layout; }
 
     [[nodiscard]]
-    auto getDescriptorSet(size_t index) -> VkDescriptorSet& {
-        if (index >= m_descriptorSets.size()) {
-            throw std::out_of_range("DescriptorSet index out of range");
+    auto allocateDescriptorSets(uint32_t count) -> std::vector<VkDescriptorSet> {
+        if (count > m_descriptorSets.capacity() - m_descriptorSets.size()) {
+            throw std::runtime_error("Not enough capacity in DescriptorPool to allocate more descriptor sets");
         }
-        return m_descriptorSets[index];
+
+        std::vector<VkDescriptorSetLayout> vklayouts(count, m_layout);
+        std::vector<VkDescriptorSet> vkdescriptorSets(count, VK_NULL_HANDLE);
+
+        VkDescriptorSetAllocateInfo allocInfo{
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+            .pNext = nullptr,
+            .descriptorPool = m_descriptorPool,
+            .descriptorSetCount = count,
+            .pSetLayouts = vklayouts.data()
+        };
+
+        vlk::AllocateDescriptorSets(
+            m_device,
+            &allocInfo,
+            vkdescriptorSets.data()
+        );
+
+        m_descriptorSets.insert(
+            m_descriptorSets.end(),
+            vkdescriptorSets.begin(),
+            vkdescriptorSets.end()
+        );
+
+        return vkdescriptorSets;
     }
 
 private:

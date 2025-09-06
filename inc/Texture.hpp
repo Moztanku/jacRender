@@ -86,8 +86,14 @@ public:
         return m_Image->getView();
     }
 
+    [[nodiscard]]
+    auto getFilePath() const -> const std::filesystem::path& {
+        return m_FilePath;
+    }
+
 private:
     std::unique_ptr<wrapper::Image> m_Image;
+    std::filesystem::path m_FilePath;
 };
 
 class TextureSampler {

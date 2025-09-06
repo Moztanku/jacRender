@@ -79,9 +79,7 @@ public:
 
     // TODO: descriptor sets management
     [[nodiscard]]
-    auto getDescriptorSet(size_t idx) -> VkDescriptorSet {
-        return m_descriptorPool.getDescriptorSet(idx);
-    }
+    auto getDescriptorPool() -> wrapper::DescriptorPool& { return m_descriptorPool; }
 
     [[nodiscard]]
     auto getLayout() -> VkDescriptorSetLayout {
