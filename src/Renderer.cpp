@@ -12,6 +12,8 @@
 #include "vulkan/utils.hpp"
 #include "vulkan/Shader.hpp"
 
+#include "shader/defs_global.hpp"
+
 namespace {
 
 [[nodiscard]]
@@ -32,33 +34,6 @@ auto get_default_shaders(vulkan::Device& device) -> std::vector<vulkan::Shader> 
     return shaders;
 }
 
-[[nodiscard]]
-auto create_global_desc_pool(VkDevice device, size_t framesInFlight) -> wrapper::DescriptorPool {
-    const auto bindings = get_global_descset_layout_bindings();
-
-    VkDescriptorSetLayoutCreateInfo layoutInfo{};
-
-    layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
-    layoutInfo.pBindings = bindings.data();
-    layoutInfo.flags = 0;
-
-    VkDescriptorSetLayout layout;
-    vlk::CreateDescriptorSetLayout(device, &layoutInfo, nullptr, &layout);
-
-    std::array<VkDescriptorPoolSize, 1> poolSizes{};
-
-    poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    poolSizes[0].descriptorCount = static_cast<uint32_t>(framesInFlight);
-
-    return wrapper::DescriptorPool{
-        device,
-        layout,
-        poolSizes,
-        static_cast<uint32_t>(framesInFlight)
-    };
-}
-
 } // namespace
 
 Renderer::Renderer(
@@ -71,7 +46,12 @@ Renderer::Renderer(
     , m_resourceManager{m_instance, m_device}
     , m_swapchain{m_device, m_surface, m_window}
     , m_maxFramesInFlight{static_cast<uint8_t>(m_swapchain.getImageCount())}
-    , m_descriptorPool{create_global_desc_pool(m_device.getDevice(), m_maxFramesInFlight)}
+    , m_descriptorPool{
+        m_device.getDevice(),
+        shader::create_global_descset_layout(m_device.getDevice()),
+        shader::get_global_desc_pool_sizes(m_maxFramesInFlight),
+        m_maxFramesInFlight
+    }
     , m_depthImage{
         m_resourceManager.getMemoryManager().createImage(
             {
@@ -99,7 +79,7 @@ Renderer::Renderer(
     for (uint8_t i = 0; i < m_maxFramesInFlight; ++i) {
         m_cameraUBOs.emplace_back(
             m_resourceManager.getMemoryManager().createBuffer(
-                sizeof(CameraUBO),
+                sizeof(shader::CameraUBO),
                 wrapper::BufferType::UNIFORM
             )
         );
@@ -109,7 +89,7 @@ Renderer::Renderer(
         VkDescriptorBufferInfo bufferInfo{};
         bufferInfo.buffer = m_cameraUBOs[i].getBuffer();
         bufferInfo.offset = 0;
-        bufferInfo.range = sizeof(CameraUBO);
+        bufferInfo.range = sizeof(shader::CameraUBO);
 
         std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
         descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -210,7 +190,7 @@ void Renderer::renderFrame() {
     m_commandBuffer.end();
 
     // 3.5 Update uniform buffer for the current frame (now without model matrix)
-    static CameraUBO ubo{};
+    static shader::CameraUBO ubo{};
     ubo.view = glm::lookAt(
         glm::vec3(10.0f, 10.0f, 10.0f),  // Move camera further back
         glm::vec3(0.0f, 0.0f, 0.0f),

@@ -8,8 +8,8 @@
 
 #include "Texture.hpp"
 #include "MemoryManager.hpp"
-#include "ShaderDefinitions.hpp"
 #include "wrapper/Buffer.hpp"
+#include "shader/defs_material.hpp"
 
 #include <set>
 #include <map>
@@ -86,7 +86,7 @@ public:
         // Create UBO for material data
         m_uboBuffer = std::make_unique<wrapper::Buffer>(
             memoryManager.createBuffer(
-                sizeof(MaterialUBO),
+                sizeof(shader::MaterialUBO),
                 wrapper::BufferType::UNIFORM
             )
         );
@@ -94,7 +94,7 @@ public:
         // Update UBO data
         memoryManager.copyDataToBuffer(
             &m_uboData,
-            sizeof(MaterialUBO),
+            sizeof(shader::MaterialUBO),
             *m_uboBuffer
         );
     
@@ -114,7 +114,7 @@ private:
     // non-owning pointer to the descriptor set allocated for this material
     // VkDescriptorSet m_descriptorSet;
 
-    MaterialUBO m_uboData;
+    shader::MaterialUBO m_uboData;
     std::unique_ptr<wrapper::Buffer> m_uboBuffer;
     std::unique_ptr<Texture> m_diffuseTexture;
     std::unique_ptr<Texture> m_normalTexture;
@@ -191,7 +191,7 @@ private:
         VkDescriptorBufferInfo bufferInfo{};
         bufferInfo.buffer = uboBuffer.getBuffer();
         bufferInfo.offset = 0;
-        bufferInfo.range = sizeof(MaterialUBO);
+        bufferInfo.range = sizeof(shader::MaterialUBO);
 
         descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         descriptorWrites[0].dstSet = descriptorSet;

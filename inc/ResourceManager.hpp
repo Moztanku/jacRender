@@ -16,6 +16,8 @@
 #include "Model.hpp"
 #include "MemoryManager.hpp"
 
+struct ModelHandle;
+
 class ResourceManager {
 public:
     ResourceManager(vulkan::Instance& instance, vulkan::Device& device)
@@ -68,6 +70,9 @@ public:
 private:
     Assimp::Importer importer;
     MemoryManager memoryManager;
+
+    std::vector<Mesh> m_meshes;
+    std::vector<Texture> m_textures;
 
     inline static std::shared_ptr<TextureSampler> defaultTextureSampler{nullptr};
 

@@ -7,7 +7,7 @@
 #include <assimp/mesh.h>
 
 #include "wrapper/Buffer.hpp"
-#include "ShaderDefinitions.hpp"
+#include "shader/Vertex.hpp"
 #include "MemoryManager.hpp"
 
 class Mesh {
@@ -18,7 +18,7 @@ public:
         aiMatrix4x4 transform)
     : m_vertexBuffer(
         memoryManager.createBuffer(
-            sizeof(Vertex) * mesh->mNumVertices,
+            sizeof(shader::Vertex) * mesh->mNumVertices,
             wrapper::BufferType::VERTEX
         ))
     , m_indexBuffer(
@@ -33,7 +33,7 @@ public:
             throw std::runtime_error("Mesh is missing positions or faces.");
         }
 
-        std::vector<Vertex> vertices;
+        std::vector<shader::Vertex> vertices;
         std::vector<uint32_t> indices;
 
         vertices.reserve(mesh->mNumVertices);
@@ -45,7 +45,7 @@ public:
         }
 
         for (uint32_t i = 0; i < mesh->mNumVertices; i++) {
-            Vertex vertex{};
+            shader::Vertex vertex{};
 
             // Apply transform to position
             aiVector3D transformedPos = transform * mesh->mVertices[i];
@@ -94,7 +94,7 @@ public:
 
         memoryManager.copyDataToBuffer(
             vertices.data(),
-            sizeof(Vertex) * vertices.size(),
+            sizeof(shader::Vertex) * vertices.size(),
             m_vertexBuffer
         );
 

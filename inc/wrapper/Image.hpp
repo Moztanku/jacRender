@@ -74,7 +74,7 @@ private:
     VkDevice device;
 
     [[maybe_unused]]
-    ImageType type; // Not used currently, but can be extended for different image types
+    ImageType type;
 };
 
 } // namespace wrapper

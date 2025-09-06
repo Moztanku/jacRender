@@ -6,6 +6,8 @@
 #pragma once
 
 #include <memory>
+#include <expected>
+#include <filesystem>
 
 #include "vulkan/wrapper.hpp"
 #include "vulkan/Instance.hpp"
@@ -19,6 +21,8 @@
 #include "wrapper/CommandPool.hpp"
 #include "wrapper/DescriptorPool.hpp"
 #include "wrapper/Sync.hpp"
+
+#include "shader/defs_instance.hpp"
 
 #include "Texture.hpp"
 #include "Model.hpp"
@@ -41,6 +45,16 @@ public:
     auto operator=(const Renderer&) -> Renderer& = delete;
     auto operator=(Renderer&&) -> Renderer& = delete;
 
+    struct Error {
+
+    };
+
+    auto loadModel(const std::filesystem::path& path) -> std::expected<ModelHandle, Error>;
+
+    auto submit(ModelHandle model, const glm::mat4& modelMatrix) -> void;
+
+    auto render() -> void;
+
     auto draw(const Model& model, const glm::mat4& modelMatrix) -> void
     {
         auto& cmd = m_commandPool.getCmdBuffer(m_currentFrame);
@@ -56,7 +70,7 @@ public:
             };
             cmd.bindDescriptorSets(descriptorSets, m_pipeline.getPipelineLayout());
 
-            PushConstants pushConstants{};
+            shader::PushConstants pushConstants{};
             pushConstants.model = modelMatrix;
 
             // pushConstants.color = material->getColorTint();
@@ -70,7 +84,7 @@ public:
                 m_pipeline.getPipelineLayout(),
                 VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
                 0,
-                sizeof(PushConstants),
+                sizeof(shader::PushConstants),
                 &pushConstants
             );
 

@@ -72,6 +72,10 @@ target_sources(${PROJECT_NAME}
     ${SRC_DIR}/wrapper/CommandBuffer.cpp
     ${SRC_DIR}/vulkan/utils.cpp
     ${SRC_DIR}/vulkan/wrapper.cpp
+    # shader related
+    ${SRC_DIR}/shader/defs_global.cpp
+    ${SRC_DIR}/shader/defs_material.cpp
+    ${SRC_DIR}/shader/defs_instance.cpp
     # Renderer related
     ${SRC_DIR}/Renderer.cpp
     ${SRC_DIR}/MemoryManager.cpp)

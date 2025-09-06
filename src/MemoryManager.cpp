@@ -2,7 +2,7 @@
 
 #include <cstring>
 
-#include "ShaderDefinitions.hpp"
+#include "shader/defs_material.hpp"
 
 namespace {
 
@@ -108,43 +108,17 @@ auto get_image_usage(wrapper::ImageType type) -> VkImageUsageFlags {
     }
 }
 
-auto create_material_desc_pool(VkDevice device, uint32_t descCount) -> wrapper::DescriptorPool {
-    const auto bindings = get_material_descset_layout_bindings();
+// auto create_material_desc_pool(VkDevice device, uint32_t descCount) -> wrapper::DescriptorPool {
+//     const auto layout = shader::create_material_descset_layout(device);
+//     const auto poolSizes = shader::get_material_desc_pool_sizes(descCount);
 
-    VkDescriptorSetLayoutCreateInfo layoutInfo{};
-
-    layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
-    layoutInfo.pBindings = bindings.data();
-    layoutInfo.flags = 0;
-
-    VkDescriptorSetLayout layout;
-    vlk::CreateDescriptorSetLayout(device, &layoutInfo, nullptr, &layout);
-
-    std::array<VkDescriptorPoolSize, 5> poolSizes{};
-
-    poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    poolSizes[0].descriptorCount = descCount;
-
-    poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    poolSizes[1].descriptorCount = descCount;
-
-    poolSizes[2].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    poolSizes[2].descriptorCount = descCount;
-
-    poolSizes[3].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    poolSizes[3].descriptorCount = descCount;
-
-    poolSizes[4].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    poolSizes[4].descriptorCount = descCount;
-
-    return wrapper::DescriptorPool{
-        device,
-        layout,
-        poolSizes,
-        descCount
-    };
-};
+//     return wrapper::DescriptorPool{
+//         device,
+//         layout,
+//         poolSizes,
+//         descCount
+//     };
+// };
 
 } // namespace
 
@@ -153,7 +127,12 @@ MemoryManager::MemoryManager(
     vulkan::Device& device)
 : m_allocator{create_vma_allocator(instance, device)}
 , m_device{device.getDevice()}
-, m_descriptorPool{create_material_desc_pool(m_device, 100)} // 100 materials max for now, TODO: make resizable
+, m_descriptorPool{
+    m_device,
+    shader::create_material_descset_layout(m_device),
+    shader::get_material_desc_pool_sizes(100),
+    100u
+}
 // , m_transferQueue{device.getTransferQueue()}
 , m_transferQueue{device.getGraphicsQueue()} // Using graphics queue for transfer for simplicity, TODO: change if improvement needed
 , m_commandPool{device, m_transferQueue.familyIndex}

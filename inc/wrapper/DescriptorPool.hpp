@@ -13,66 +13,14 @@
 
 #include "vulkan/wrapper.hpp"
 
-#include "ShaderDefinitions.hpp"
-
 namespace wrapper {
-
-// class DescriptorSetLayout {
-// public:
-//     DescriptorSetLayout(VkDevice device, const std::span<VkDescriptorSetLayoutBinding> bindings) :
-//         m_device{device}
-//     {
-//         VkDescriptorSetLayoutCreateInfo layoutInfo{};
-//         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-//         layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
-//         layoutInfo.pBindings = bindings.data();
-
-//         vlk::CreateDescriptorSetLayout(
-//             m_device,
-//             &layoutInfo,
-//             nullptr,
-//             &m_layout
-//         );
-//     }
-
-//     ~DescriptorSetLayout() {
-//         if (m_layout != VK_NULL_HANDLE) {
-//             vlk::DestroyDescriptorSetLayout(m_device, m_layout, nullptr);
-//         }
-//     }
-
-//     DescriptorSetLayout(const DescriptorSetLayout&) = delete;
-//     DescriptorSetLayout& operator=(const DescriptorSetLayout&) = delete;
-//     DescriptorSetLayout(DescriptorSetLayout&&) = delete;
-//     DescriptorSetLayout& operator=(DescriptorSetLayout&&) = delete;
-
-//     [[nodiscard]]
-//     auto getLayout() noexcept -> VkDescriptorSetLayout& { return m_layout; }
-
-// private:
-//     VkDescriptorSetLayout m_layout;
-//     VkDevice m_device;
-// };
 
 class DescriptorPool {
 public:
     DescriptorPool(
         VkDevice device,
         VkDescriptorSetLayout layout,
-        const std::span<VkDescriptorPoolSize> poolSizes)
-    : DescriptorPool(device, layout, poolSizes, poolSizes[0].descriptorCount)
-    {
-        for (const auto& size : poolSizes) {
-            if (size.descriptorCount != poolSizes[0].descriptorCount) {
-                throw std::invalid_argument("All descriptor counts in poolSizes must be the same when using this constructor");
-            }
-        }
-    }
-
-    DescriptorPool(
-        VkDevice device,
-        VkDescriptorSetLayout layout,
-        const std::span<VkDescriptorPoolSize> poolSizes,
+        const std::vector<VkDescriptorPoolSize>& poolSizes,
         uint32_t descriptorCount,
         bool allocateNow = true)
     : m_device(device)
