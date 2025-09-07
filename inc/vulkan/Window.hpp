@@ -9,6 +9,9 @@
 
 #include <atomic>
 #include <cstdint>
+#include <vector>
+
+#include <print>
 
 namespace vulkan {
 
@@ -33,11 +36,23 @@ public:
     }
 
     // TODO: Handle and return window events properly
+    using Event = std::pair<int, int>; // first: action (GLFW_PRESS, GLFW_RELEASE), second: key
+
     [[nodiscard]]
-    auto pollEvents() noexcept -> void* {
+    auto pollEvents(const std::vector<int>& keys) noexcept -> std::vector<Event> {
         glfwPollEvents();
 
-        return nullptr;
+        std::vector<Event> events;
+
+        for (const int key : keys) {
+            if (glfwGetKey(m_window, key) == GLFW_PRESS) {
+                events.emplace_back(GLFW_PRESS, key);
+            } else if (glfwGetKey(m_window, key) == GLFW_RELEASE) {
+                events.emplace_back(GLFW_RELEASE, key);
+            }
+        }
+
+        return events;
     }
 
     [[nodiscard]]

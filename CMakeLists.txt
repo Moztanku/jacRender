@@ -78,7 +78,8 @@ target_sources(${PROJECT_NAME}
     ${SRC_DIR}/shader/defs_instance.cpp
     # Renderer related
     ${SRC_DIR}/Renderer.cpp
-    ${SRC_DIR}/MemoryManager.cpp)
+    ${SRC_DIR}/MemoryManager.cpp
+    ${SRC_DIR}/Camera.cpp)
 
 target_include_directories(${PROJECT_NAME}
     PRIVATE

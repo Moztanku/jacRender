@@ -27,6 +27,7 @@
 #include "Texture.hpp"
 #include "Model.hpp"
 #include "ResourceManager.hpp"
+#include "Camera.hpp"
 
 class Renderer {
 public:
@@ -98,6 +99,8 @@ public:
     auto renderFrame() -> void;
     auto recreateSwapchain() -> void;
 
+    auto getCamera() -> Camera& { return m_camera; }
+
 private:
     vulkan::Window& m_window;
     vulkan::Instance m_instance;
@@ -125,4 +128,6 @@ private:
     std::vector<wrapper::Fence> m_inFlightVec{};
 
     uint8_t m_currentFrame{0};
+
+    Camera m_camera;
 };

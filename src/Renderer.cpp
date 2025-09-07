@@ -75,6 +75,15 @@ Renderer::Renderer(
     , m_framebuffer{m_device, m_swapchain, m_pipeline, m_depthImage.getView()}
     , m_commandPool{m_device, m_device.getGraphicsQueue().familyIndex, m_maxFramesInFlight}
     , m_testModel{m_resourceManager.loadModel("models/Character_Male.fbx")}
+    , m_camera{
+        Camera::resolution{
+            m_swapchain.getExtent().width,
+            m_swapchain.getExtent().height
+        },
+        Camera::vector{10.f, 10.f, 10.f},
+        glm::normalize(Camera::vector{-10.f, -10.f, -10.f}),
+        Camera::normal{0.f, 1.f, 0.f}
+    }
 {
     // Create uniform buffers
     m_cameraUBOs.reserve(m_maxFramesInFlight);
@@ -170,23 +179,30 @@ void Renderer::renderFrame() {
 
     const float seconds = static_cast<float>(millisecond_now - millisecond_start) / 1000.0f;
 
-    const glm::mat4 modelMatrix = glm::scale(
-        glm::rotate(
-            glm::mat4(1.0f),
-            seconds * glm::radians(90.0f),
-            glm::vec3(0.0f, 0.0f, 1.0f)
-        ),
-        glm::vec3(0.02f, 0.02f, 0.02f)  // Scale down the model
+    static const glm::mat4 modelMatrix = glm::scale(
+        glm::mat4(1.0f),
+        glm::vec3(0.02f, 0.02f, 0.02f)
     );
 
-    // Debug: print model info
-    static bool printed = false;
-    if (!printed) {
-        std::println("Model has {} drawables", m_testModel.getDrawables().size());
-        printed = true;
-    }
-    
-    draw(m_testModel, modelMatrix);
+    constexpr int32_t NUM_MODELS_ROW = 20;
+    constexpr int32_t NUM_MODELS_COL = 20;
+    constexpr float SPACING = 100.0f;
+
+    for (int32_t row = -NUM_MODELS_ROW / 2; row < NUM_MODELS_ROW / 2; row++)
+        for (int32_t col = -NUM_MODELS_COL / 2; col < NUM_MODELS_COL / 2; col++)
+            draw(
+                m_testModel,
+                glm::translate(
+                    modelMatrix,
+                    glm::vec3(
+                        row * SPACING,
+                        0.0f,
+                        col * SPACING
+                    )
+                )
+            );
+
+    // draw(m_testModel, modelMatrix);
 
     m_commandBuffer.endRenderPass();
 
@@ -194,18 +210,20 @@ void Renderer::renderFrame() {
 
     // 3.5 Update uniform buffer for the current frame (now without model matrix)
     static shader::CameraUBO ubo{};
-    ubo.view = glm::lookAt(
-        glm::vec3(10.0f, 10.0f, 10.0f),  // Move camera further back
-        glm::vec3(0.0f, 0.0f, 0.0f),
-        glm::vec3(0.0f, 1.0f, 0.0f)
-    );
+    // ubo.view = glm::lookAt(
+    //     glm::vec3(10.0f, 10.0f, 10.0f),  // Move camera further back
+    //     glm::vec3(0.0f, 0.0f, 0.0f),
+    //     glm::vec3(0.0f, 1.0f, 0.0f)
+    // );
+    ubo.view = m_camera.getView();
 
-    ubo.proj = glm::perspective(
-        glm::radians(45.0f),
-        static_cast<float>(m_swapchain.getExtent().width) / static_cast<float>(m_swapchain.getExtent().height),
-        0.1f,
-        100.0f  // Increase far plane
-    );
+    // ubo.proj = glm::perspective(
+    //     glm::radians(45.0f),
+    //     static_cast<float>(m_swapchain.getExtent().width) / static_cast<float>(m_swapchain.getExtent().height),
+    //     0.1f,
+    //     100.0f  // Increase far plane
+    // );
+    ubo.proj = m_camera.getProjection();
     ubo.proj[1][1] *= -1; // Vulkan uses a different coordinate system
 
     m_resourceManager.getMemoryManager().copyDataToBuffer(
