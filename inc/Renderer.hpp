@@ -9,6 +9,10 @@
 #include <expected>
 #include <filesystem>
 
+#include <assimp/scene.h>
+#include <assimp/Importer.hpp>
+#include <assimp/postprocess.h>
+
 #include "vulkan/wrapper.hpp"
 #include "vulkan/Instance.hpp"
 #include "vulkan/Window.hpp"
@@ -50,9 +54,41 @@ public:
 
     };
 
-    auto loadModel(const std::filesystem::path& path) -> std::expected<ModelHandle, Error>;
+    auto loadModel(const std::filesystem::path& fpath) -> std::expected<Model, Error>
+    {
+        Assimp::Importer importer;
 
-    auto submit(ModelHandle model, const glm::mat4& modelMatrix) -> void;
+        const std::string filepath = fpath.string();
+
+        const aiScene* scene = importer.ReadFile(
+            filepath.c_str(),
+            aiProcess_Triangulate |
+            aiProcess_FlipUVs |
+            aiProcess_CalcTangentSpace |
+            aiProcess_SplitLargeMeshes
+        );
+
+        if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
+            std::println("Failed to load model: {}", importer.GetErrorString());
+            return std::unexpected(Error{});
+        }
+
+        const auto directory = filepath.substr(0, filepath.find_last_of("\\/"));
+
+        try {
+            return Model{
+                scene,
+                m_resourceManager,
+                m_resourceManager.getMemoryManager(),
+                directory
+            };
+        } catch (const std::exception& e) {
+            std::println("Exception while creating model: {}", e.what());
+            return std::unexpected(Error{});
+        }
+    }
+
+    auto submit(Model model, const glm::mat4& modelMatrix) -> void;
 
     auto render() -> void;
 
@@ -67,7 +103,7 @@ public:
             // Bind both global descriptor set (set 0) and material descriptor set (set 1)
             std::vector<VkDescriptorSet> descriptorSets = {
                 m_globalDescriptorSets[m_currentFrame],
-                material->m_descriptorSet
+                material->getDescriptorSet()
             };
             cmd.bindDescriptorSets(descriptorSets, m_pipeline.getPipelineLayout());
 
@@ -106,7 +142,6 @@ private:
     vulkan::Instance m_instance;
     vulkan::Surface m_surface;
     vulkan::Device m_device;
-    // MemoryManager m_memoryManager;
     ResourceManager m_resourceManager;
 
     vulkan::Swapchain m_swapchain;

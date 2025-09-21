@@ -4,22 +4,89 @@
  */
 #pragma once
 
+#include <stack>
 #include <vector>
+
+#include <assimp/scene.h>
 
 #include "Mesh.hpp"
 #include "Material.hpp"
+#include "ResourceManager.hpp"
+
+namespace {
+
+[[nodiscard]]
+auto load_meshes(
+    const aiScene* scene,
+    MemoryManager& memoryManager
+) -> std::vector<Mesh> {
+    std::vector<Mesh> meshes;
+    meshes.reserve(scene->mNumMeshes);
+
+    std::stack<
+        std::pair<
+            const aiNode*,
+            aiMatrix4x4 // parrent combined transform
+        >
+    > nodeStack;
+
+    nodeStack.push({scene->mRootNode, aiMatrix4x4{}});
+
+    while (!nodeStack.empty()) {
+        auto [node, parentTransform] = nodeStack.top();
+        nodeStack.pop();
+
+        aiMatrix4x4 currentTransform = parentTransform * node->mTransformation;
+
+        for (size_t i = 0; i < node->mNumMeshes; i++) {
+            aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
+            meshes.emplace_back(memoryManager, mesh, currentTransform);
+        }
+
+        for (size_t i = 0; i < node->mNumChildren; i++) {
+            nodeStack.push({node->mChildren[i], currentTransform});
+        }
+    }
+
+    return meshes;
+}
+
+[[nodiscard]]
+auto load_materials(
+    const aiScene* scene,
+    std::string_view directory,
+    ResourceManager& resourceManager,
+    MemoryManager& memoryManager
+) -> std::vector<Material> {
+    std::vector<Material> materials;
+
+    for (size_t i = 0; i < scene->mNumMaterials; i++) {
+        aiMaterial* material = scene->mMaterials[i];
+
+        materials.emplace_back(
+            material,
+            resourceManager,
+            memoryManager,
+            directory
+        );
+    }
+
+    return materials;
+}
+
+} // namespace
 
 class Model {
 using Drawable = std::pair<const Mesh*, const Material*>;
 public:
     Model(
-        std::vector<Mesh>&& meshes,
-        std::vector<Material>&& materials)
-    : m_meshes(std::move(meshes))
-    , m_materials(std::move(materials))
-    {
-        assert(m_meshes.size() >= m_materials.size());
-    }
+        const aiScene* scene,
+        ResourceManager& resourceManager,
+        MemoryManager& memoryManager,
+        std::string_view directory)
+    : m_meshes{load_meshes(scene, memoryManager)}
+    , m_materials{load_materials(scene, directory, resourceManager, memoryManager)}
+    {}
 
     auto getDrawables() const -> std::vector<Drawable> {
         std::vector<Drawable> drawables;

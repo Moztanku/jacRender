@@ -74,7 +74,7 @@ Renderer::Renderer(
         m_resourceManager.getMemoryManager().getLayout()}
     , m_framebuffer{m_device, m_swapchain, m_pipeline, m_depthImage.getView()}
     , m_commandPool{m_device, m_device.getGraphicsQueue().familyIndex, m_maxFramesInFlight}
-    , m_testModel{m_resourceManager.loadModel("models/Character_Male.fbx")}
+    , m_testModel{*loadModel("models/Character_Male.fbx")}
     , m_camera{
         Camera::resolution{
             m_swapchain.getExtent().width,
