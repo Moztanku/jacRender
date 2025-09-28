@@ -4,6 +4,10 @@
 #include <format>
 #include <chrono>
 
+#include <assimp/scene.h>
+#include <assimp/Importer.hpp>
+#include <assimp/postprocess.h>
+
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
@@ -13,6 +17,7 @@
 #include "vulkan/Shader.hpp"
 
 #include "shader/defs_global.hpp"
+#include "shader/defs_instance.hpp"
 
 namespace {
 
@@ -74,7 +79,6 @@ Renderer::Renderer(
         m_resourceManager.getMemoryManager().getLayout()}
     , m_framebuffer{m_device, m_swapchain, m_pipeline, m_depthImage.getView()}
     , m_commandPool{m_device, m_device.getGraphicsQueue().familyIndex, m_maxFramesInFlight}
-    , m_testModel{*loadModel("models/Character_Male.fbx")}
     , m_camera{
         Camera::resolution{
             m_swapchain.getExtent().width,
@@ -137,7 +141,59 @@ Renderer::~Renderer()
     vkDeviceWaitIdle(m_device.getDevice());
 }
 
-void Renderer::renderFrame() {
+auto Renderer::loadModel(const std::filesystem::path& fpath) -> std::expected<ModelID, Error>
+{
+    Assimp::Importer importer;
+
+    static ModelID nextID{0};
+    const ModelID modelID = nextID++;
+
+    const std::string filepath = fpath.string();
+
+    const aiScene* scene = importer.ReadFile(
+        filepath.c_str(),
+        aiProcess_Triangulate |
+        aiProcess_FlipUVs |
+        aiProcess_CalcTangentSpace |
+        aiProcess_SplitLargeMeshes
+    );
+
+    if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
+        std::println("Failed to load model: {}", importer.GetErrorString());
+        return std::unexpected(Error{});
+    }
+
+    const auto directory = filepath.substr(0, filepath.find_last_of("\\/"));
+
+    try {
+        Model model{
+            scene,
+            m_resourceManager,
+            m_resourceManager.getMemoryManager(),
+            directory
+        };
+
+        m_loadedModels.emplace(modelID, std::move(model));
+
+        return modelID;
+    } catch (const std::exception& e) {
+        std::println("Exception while creating model: {}", e.what());
+        return std::unexpected(Error{});
+    }
+}
+
+auto Renderer::unloadModel(const ModelID model) -> void
+{
+    m_loadedModels.erase(model);
+}
+
+auto Renderer::submit(const ModelID model, const glm::mat4& modelMatrix) -> void
+{
+    m_drawQueue.push({model, modelMatrix});
+}
+
+auto Renderer::render() -> void
+{
     // 1. Wait for the previous frame to finish
     auto& m_commandBuffer = m_commandPool.getCmdBuffer(m_currentFrame);
     auto& m_imageAvailable = m_imageAvailableVec[m_currentFrame];
@@ -169,40 +225,11 @@ void Renderer::renderFrame() {
     m_commandBuffer.set(m_swapchain.getScissor());
     m_commandBuffer.bind(m_pipeline);
 
-    static uint64_t millisecond_start = std::chrono::duration_cast<std::chrono::milliseconds>(
-        std::chrono::system_clock::now().time_since_epoch()
-    ).count();
-
-    const uint64_t millisecond_now = std::chrono::duration_cast<std::chrono::milliseconds>(
-        std::chrono::system_clock::now().time_since_epoch()
-    ).count();
-
-    const float seconds = static_cast<float>(millisecond_now - millisecond_start) / 1000.0f;
-
-    static const glm::mat4 modelMatrix = glm::scale(
-        glm::mat4(1.0f),
-        glm::vec3(0.02f, 0.02f, 0.02f)
-    );
-
-    constexpr int32_t NUM_MODELS_ROW = 20;
-    constexpr int32_t NUM_MODELS_COL = 20;
-    constexpr float SPACING = 100.0f;
-
-    for (int32_t row = -NUM_MODELS_ROW / 2; row < NUM_MODELS_ROW / 2; row++)
-        for (int32_t col = -NUM_MODELS_COL / 2; col < NUM_MODELS_COL / 2; col++)
-            draw(
-                m_testModel,
-                glm::translate(
-                    modelMatrix,
-                    glm::vec3(
-                        row * SPACING,
-                        0.0f,
-                        col * SPACING
-                    )
-                )
-            );
-
-    // draw(m_testModel, modelMatrix);
+    while (!m_drawQueue.empty()) {
+        const auto& drawCall = m_drawQueue.front();
+        draw(drawCall.model, drawCall.modelMatrix);
+        m_drawQueue.pop();
+    }
 
     m_commandBuffer.endRenderPass();
 
@@ -210,19 +237,7 @@ void Renderer::renderFrame() {
 
     // 3.5 Update uniform buffer for the current frame (now without model matrix)
     static shader::CameraUBO ubo{};
-    // ubo.view = glm::lookAt(
-    //     glm::vec3(10.0f, 10.0f, 10.0f),  // Move camera further back
-    //     glm::vec3(0.0f, 0.0f, 0.0f),
-    //     glm::vec3(0.0f, 1.0f, 0.0f)
-    // );
     ubo.view = m_camera.getView();
-
-    // ubo.proj = glm::perspective(
-    //     glm::radians(45.0f),
-    //     static_cast<float>(m_swapchain.getExtent().width) / static_cast<float>(m_swapchain.getExtent().height),
-    //     0.1f,
-    //     100.0f  // Increase far plane
-    // );
     ubo.proj = m_camera.getProjection();
     ubo.proj[1][1] *= -1; // Vulkan uses a different coordinate system
 
@@ -251,4 +266,46 @@ void Renderer::renderFrame() {
 
     // 6. Move to the next frame
     m_currentFrame = (m_currentFrame + 1) % m_maxFramesInFlight;
+}
+
+auto Renderer::draw(const ModelID modelID, const glm::mat4& modelMatrix) -> void
+{
+    auto& cmd = m_commandPool.getCmdBuffer(m_currentFrame);
+
+    const auto& model = m_loadedModels.at(modelID);
+
+    for (const auto& [mesh, material] : model.getDrawables()) {
+        cmd.bind(mesh->getVertexBuffer());
+        cmd.bind(mesh->getIndexBuffer());
+
+        // Bind both global descriptor set (set 0) and material descriptor set (set 1)
+        std::vector<VkDescriptorSet> descriptorSets = {
+            m_globalDescriptorSets[m_currentFrame],
+            material->getDescriptorSet()
+        };
+        cmd.bindDescriptorSets(descriptorSets, m_pipeline.getPipelineLayout());
+
+        shader::PushConstants pushConstants{};
+        pushConstants.model = modelMatrix;
+
+        // pushConstants.color = material->getColorTint();
+        pushConstants.color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f); // White for full alpha
+        pushConstants.time = 0.0f; // TODO: pass actual time
+        pushConstants.objectId = 0; // TODO: pass actual object ID
+        pushConstants.padding[0] = 0.0f;
+        pushConstants.padding[1] = 0.0f;
+
+        cmd.pushConstants(
+            m_pipeline.getPipelineLayout(),
+            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+            0,
+            sizeof(shader::PushConstants),
+            &pushConstants
+        );
+
+        const wrapper::DrawIndexed draw_command{
+            mesh->getIndexCount()
+        };
+        cmd.record(draw_command);
+    }
 }

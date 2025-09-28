@@ -6,12 +6,9 @@
 #pragma once
 
 #include <memory>
+#include <queue>
 #include <expected>
 #include <filesystem>
-
-#include <assimp/scene.h>
-#include <assimp/Importer.hpp>
-#include <assimp/postprocess.h>
 
 #include "vulkan/wrapper.hpp"
 #include "vulkan/Instance.hpp"
@@ -26,8 +23,6 @@
 #include "wrapper/DescriptorPool.hpp"
 #include "wrapper/Sync.hpp"
 
-#include "shader/defs_instance.hpp"
-
 #include "Texture.hpp"
 #include "Model.hpp"
 #include "ResourceManager.hpp"
@@ -35,6 +30,8 @@
 
 class Renderer {
 public:
+    using ModelID = size_t;
+
     struct Config {
         // Here I'll put configuration options for the renderer in the future
     };
@@ -54,85 +51,12 @@ public:
 
     };
 
-    auto loadModel(const std::filesystem::path& fpath) -> std::expected<Model, Error>
-    {
-        Assimp::Importer importer;
+    auto loadModel(const std::filesystem::path& fpath) -> std::expected<ModelID, Error>;
+    auto unloadModel(const ModelID model) -> void;
 
-        const std::string filepath = fpath.string();
-
-        const aiScene* scene = importer.ReadFile(
-            filepath.c_str(),
-            aiProcess_Triangulate |
-            aiProcess_FlipUVs |
-            aiProcess_CalcTangentSpace |
-            aiProcess_SplitLargeMeshes
-        );
-
-        if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
-            std::println("Failed to load model: {}", importer.GetErrorString());
-            return std::unexpected(Error{});
-        }
-
-        const auto directory = filepath.substr(0, filepath.find_last_of("\\/"));
-
-        try {
-            return Model{
-                scene,
-                m_resourceManager,
-                m_resourceManager.getMemoryManager(),
-                directory
-            };
-        } catch (const std::exception& e) {
-            std::println("Exception while creating model: {}", e.what());
-            return std::unexpected(Error{});
-        }
-    }
-
-    auto submit(Model model, const glm::mat4& modelMatrix) -> void;
+    auto submit(const ModelID model, const glm::mat4& modelMatrix) -> void;
 
     auto render() -> void;
-
-    auto draw(const Model& model, const glm::mat4& modelMatrix) -> void
-    {
-        auto& cmd = m_commandPool.getCmdBuffer(m_currentFrame);
-
-        for (const auto& [mesh, material] : model.getDrawables()) {
-            cmd.bind(mesh->getVertexBuffer());
-            cmd.bind(mesh->getIndexBuffer());
-
-            // Bind both global descriptor set (set 0) and material descriptor set (set 1)
-            std::vector<VkDescriptorSet> descriptorSets = {
-                m_globalDescriptorSets[m_currentFrame],
-                material->getDescriptorSet()
-            };
-            cmd.bindDescriptorSets(descriptorSets, m_pipeline.getPipelineLayout());
-
-            shader::PushConstants pushConstants{};
-            pushConstants.model = modelMatrix;
-
-            // pushConstants.color = material->getColorTint();
-            pushConstants.color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f); // White for full alpha
-            pushConstants.time = 0.0f; // TODO: pass actual time
-            pushConstants.objectId = 0; // TODO: pass actual object ID
-            pushConstants.padding[0] = 0.0f;
-            pushConstants.padding[1] = 0.0f;
-
-            cmd.pushConstants(
-                m_pipeline.getPipelineLayout(),
-                VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-                0,
-                sizeof(shader::PushConstants),
-                &pushConstants
-            );
-
-            const wrapper::DrawIndexed draw_command{
-                mesh->getIndexCount()
-            };
-            cmd.record(draw_command);
-        }
-    }
-
-    auto renderFrame() -> void;
     auto recreateSwapchain() -> void;
 
     auto getCamera() -> Camera& { return m_camera; }
@@ -155,7 +79,6 @@ private:
     vulkan::Framebuffer m_framebuffer;
     wrapper::CommandPool m_commandPool;
 
-    Model m_testModel;
     std::vector<wrapper::Buffer> m_cameraUBOs{};
 
     std::vector<wrapper::Semaphore> m_imageAvailableVec{};
@@ -165,4 +88,18 @@ private:
     uint8_t m_currentFrame{0};
 
     Camera m_camera;
+
+    std::unordered_map<
+        ModelID,
+        Model
+    > m_loadedModels{};
+
+    struct DrawCall {
+        const ModelID model;
+        const glm::mat4 modelMatrix;
+    };
+
+    std::queue<DrawCall> m_drawQueue{};
+
+    auto draw(const ModelID modelID, const glm::mat4& modelMatrix) -> void;
 };
