@@ -9,7 +9,7 @@
 #include "Texture.hpp"
 #include "ResourceManager.hpp"
 #include "MemoryManager.hpp"
-#include "wrapper/Buffer.hpp"
+#include "core/memory/Buffer.hpp"
 #include "shader/defs_material.hpp"
 
 #include <set>
@@ -65,7 +65,7 @@ public:
     : m_uboBuffer{
         memoryManager.createBuffer(
             sizeof(shader::MaterialUBO),
-            wrapper::BufferType::UNIFORM,
+            core::memory::BufferType::UNIFORM,
             MemoryUsage::CPU_TO_GPU)}
     , m_descriptorSet{memoryManager.getDescriptorPool().allocateDescriptorSets(1)[0]}
     , m_diffuseTexture{load_texture(material, aiTextureType_DIFFUSE, directory, resourceManager)}
@@ -113,7 +113,7 @@ public:
             descriptorWrites[i + 1].pImageInfo = &imageInfos[i];
         }
 
-        vlk::UpdateDescriptorSets(
+        vulkan::UpdateDescriptorSets(
             memoryManager.getDevice(),
             static_cast<uint32_t>(descriptorWrites.size()),
             descriptorWrites.data(),
@@ -133,7 +133,7 @@ public:
 
 private:
     shader::MaterialUBO m_uboData{};
-    wrapper::Buffer m_uboBuffer;
+    core::memory::Buffer m_uboBuffer;
     VkDescriptorSet m_descriptorSet;
 
     const std::shared_ptr<Texture> m_diffuseTexture;

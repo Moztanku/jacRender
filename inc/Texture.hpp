@@ -10,7 +10,7 @@
 #include "stb_image.h"
 
 #include "MemoryManager.hpp"
-#include "wrapper/Image.hpp"
+#include "core/memory/Image.hpp"
 
 class Texture {
 public:
@@ -30,7 +30,7 @@ public:
         const size_t memorySize = width * height * 4;
         auto stagingBuffer = memoryManager.createBuffer(
             memorySize,
-            wrapper::BufferType::STAGING,
+            core::memory::BufferType::STAGING,
             MemoryUsage::CPU_TO_GPU
         );
         memoryManager.copyDataToBuffer(
@@ -41,14 +41,14 @@ public:
 
         stbi_image_free(pixels);
 
-        m_Image = std::make_unique<wrapper::Image>(
+        m_Image = std::make_unique<core::memory::Image>(
             memoryManager.createImage(
                 {
                     static_cast<uint32_t>(width),
                     static_cast<uint32_t>(height),
                     1
                 },
-                wrapper::ImageType::TEXTURE_2D,
+                core::memory::ImageType::TEXTURE_2D,
                 MemoryUsage::GPU_ONLY
             )
         );
@@ -92,7 +92,7 @@ public:
     }
 
 private:
-    std::unique_ptr<wrapper::Image> m_Image;
+    std::unique_ptr<core::memory::Image> m_Image;
     std::filesystem::path m_FilePath;
 };
 

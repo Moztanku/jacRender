@@ -33,7 +33,7 @@ auto create_global_descset_layout(VkDevice device) -> VkDescriptorSetLayout {
     layoutInfo.flags = 0;
 
     VkDescriptorSetLayout layout;
-    vlk::CreateDescriptorSetLayout(device, &layoutInfo, nullptr, &layout);
+    vulkan::CreateDescriptorSetLayout(device, &layoutInfo, nullptr, &layout);
 
     return layout;
 }

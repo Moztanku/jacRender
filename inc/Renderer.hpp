@@ -10,18 +10,18 @@
 #include <expected>
 #include <filesystem>
 
-#include "vulkan/wrapper.hpp"
-#include "vulkan/Instance.hpp"
-#include "vulkan/Window.hpp"
-#include "vulkan/Surface.hpp"
-#include "vulkan/Device.hpp"
-#include "vulkan/Swapchain.hpp"
-#include "vulkan/Pipeline.hpp"
-#include "vulkan/Framebuffer.hpp"
+#include "vulkan/api.hpp"
+#include "core/device/Instance.hpp"
+#include "Window.hpp"
+#include "core/device/Surface.hpp"
+#include "core/device/Device.hpp"
+#include "core/pipeline/Swapchain.hpp"
+#include "core/pipeline/Pipeline.hpp"
+#include "core/pipeline/Framebuffer.hpp"
 
-#include "wrapper/CommandPool.hpp"
-#include "wrapper/DescriptorPool.hpp"
-#include "wrapper/Sync.hpp"
+#include "core/commands/CommandPool.hpp"
+#include "core/descriptors/DescriptorPool.hpp"
+#include "core/sync/Sync.hpp"
 
 #include "Texture.hpp"
 #include "Model.hpp"
@@ -37,7 +37,7 @@ public:
     };
 
     Renderer(
-        vulkan::Window& window,
+        Window& window,
         const Config& config = Config{}
     );
     ~Renderer();
@@ -62,28 +62,28 @@ public:
     auto getCamera() -> Camera& { return m_camera; }
 
 private:
-    vulkan::Window& m_window;
-    vulkan::Instance m_instance;
-    vulkan::Surface m_surface;
-    vulkan::Device m_device;
+    Window& m_window;
+    core::device::Instance m_instance;
+    core::device::Surface m_surface;
+    core::device::Device m_device;
     ResourceManager m_resourceManager;
 
-    vulkan::Swapchain m_swapchain;
+    core::pipeline::Swapchain m_swapchain;
     const uint8_t m_maxFramesInFlight;
 
-    wrapper::DescriptorPool m_descriptorPool;
+    core::descriptors::DescriptorPool m_descriptorPool;
     std::vector<VkDescriptorSet> m_globalDescriptorSets;
 
-    wrapper::Image m_depthImage;
-    vulkan::Pipeline m_pipeline;
-    vulkan::Framebuffer m_framebuffer;
-    wrapper::CommandPool m_commandPool;
+    core::memory::Image m_depthImage;
+    core::pipeline::Pipeline m_pipeline;
+    core::pipeline::Framebuffer m_framebuffer;
+    core::commands::CommandPool m_commandPool;
 
-    std::vector<wrapper::Buffer> m_cameraUBOs{};
+    std::vector<core::memory::Buffer> m_cameraUBOs{};
 
-    std::vector<wrapper::Semaphore> m_imageAvailableVec{};
-    std::vector<wrapper::Semaphore> m_renderFinishedVec{};
-    std::vector<wrapper::Fence> m_inFlightVec{};
+    std::vector<core::sync::Semaphore> m_imageAvailableVec{};
+    std::vector<core::sync::Semaphore> m_renderFinishedVec{};
+    std::vector<core::sync::Fence> m_inFlightVec{};
 
     uint8_t m_currentFrame{0};
 

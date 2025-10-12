@@ -57,26 +57,31 @@ target_sources(${PROJECT_NAME}
     # utilities
     ${SRC_DIR}/common/utils.cpp
     # Implementation wrappers for external libraries
-    ${SRC_DIR}/wrapper/vma.cpp
-    ${SRC_DIR}/wrapper/stb_image.cpp
-    # Vulkan wrappers
-    ${SRC_DIR}/vulkan/Window.cpp
-    ${SRC_DIR}/vulkan/Instance.cpp
-    ${SRC_DIR}/vulkan/Surface.cpp
-    ${SRC_DIR}/vulkan/Device.cpp
-    ${SRC_DIR}/vulkan/Swapchain.cpp
-    ${SRC_DIR}/vulkan/Shader.cpp
-    ${SRC_DIR}/vulkan/Pipeline.cpp
-    ${SRC_DIR}/vulkan/Framebuffer.cpp
-    ${SRC_DIR}/wrapper/CommandPool.cpp
-    ${SRC_DIR}/wrapper/CommandBuffer.cpp
+    ${SRC_DIR}/core/memory/vma.cpp
+    ${SRC_DIR}/core/memory/stb_image.cpp
+    # Device management
+    ${SRC_DIR}/core/device/Instance.cpp
+    ${SRC_DIR}/core/device/Device.cpp
+    ${SRC_DIR}/core/device/Surface.cpp
+    # Pipeline management
+    ${SRC_DIR}/core/pipeline/Framebuffer.cpp
+    ${SRC_DIR}/core/pipeline/Pipeline.cpp
+    ${SRC_DIR}/core/pipeline/Swapchain.cpp
+    ${SRC_DIR}/core/pipeline/Shader.cpp
+    # Memory management
+    #
+    # Commands and command buffers
+    ${SRC_DIR}/core/commands/CommandPool.cpp
+    ${SRC_DIR}/core/commands/CommandBuffer.cpp
+    # Low level vulkan helpers
     ${SRC_DIR}/vulkan/utils.cpp
-    ${SRC_DIR}/vulkan/wrapper.cpp
-    # shader related
+    ${SRC_DIR}/vulkan/api.cpp
+    # Shader definitions
     ${SRC_DIR}/shader/defs_global.cpp
     ${SRC_DIR}/shader/defs_material.cpp
     ${SRC_DIR}/shader/defs_instance.cpp
-    # Renderer related
+    # High level abstractions
+    ${SRC_DIR}/Window.cpp
     ${SRC_DIR}/Renderer.cpp
     ${SRC_DIR}/MemoryManager.cpp
     ${SRC_DIR}/Camera.cpp)

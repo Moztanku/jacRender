@@ -69,7 +69,7 @@ Renderer:
             - indexCount
             - materialIndex
         - Texture[]:
-            - Image // wrapper::Image
+            - Image
             - Path
 ```
 

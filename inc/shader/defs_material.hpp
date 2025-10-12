@@ -9,7 +9,7 @@
 #define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
 #include <glm/glm.hpp>
 
-#include "vulkan/wrapper.hpp"
+#include "vulkan/api.hpp"
 
 namespace shader {
 

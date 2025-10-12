@@ -6,7 +6,7 @@
 
 namespace {
 
-auto create_vma_allocator(vulkan::Instance& instance, vulkan::Device& device) -> VmaAllocator
+auto create_vma_allocator(core::device::Instance& instance, core::device::Device& device) -> VmaAllocator
 {
     VmaAllocatorCreateInfo allocatorInfo{};
     allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_2;
@@ -47,9 +47,9 @@ auto get_memory_usage(MemoryUsage usage) -> VmaMemoryUsage
     }
 }
 
-auto buffer_type_to_flags(wrapper::BufferType type) -> VmaAllocationCreateFlags
+auto buffer_type_to_flags(core::memory::BufferType type) -> VmaAllocationCreateFlags
 {
-    using Type = wrapper::BufferType;
+    using Type = core::memory::BufferType;
     switch (type) {
         case Type::VERTEX:
             return 0;
@@ -66,9 +66,9 @@ auto buffer_type_to_flags(wrapper::BufferType type) -> VmaAllocationCreateFlags
     }
 }
 
-auto buffer_type_to_usage(wrapper::BufferType type) -> VkBufferUsageFlags
+auto buffer_type_to_usage(core::memory::BufferType type) -> VkBufferUsageFlags
 {
-    using Type = wrapper::BufferType;
+    using Type = core::memory::BufferType;
     switch (type) {
         case Type::VERTEX:
             return VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
@@ -85,11 +85,11 @@ auto buffer_type_to_usage(wrapper::BufferType type) -> VkBufferUsageFlags
     }
 }
 
-auto get_image_format(wrapper::ImageType type) -> VkFormat {
+auto get_image_format(core::memory::ImageType type) -> VkFormat {
     switch (type) {
-        case wrapper::ImageType::TEXTURE_2D:
+        case core::memory::ImageType::TEXTURE_2D:
             return VK_FORMAT_R8G8B8A8_SRGB;
-        case wrapper::ImageType::DEPTH_2D:
+        case core::memory::ImageType::DEPTH_2D:
             // TODO: Choose format based on device capabilities
             return VK_FORMAT_D32_SFLOAT;
         default:
@@ -97,22 +97,22 @@ auto get_image_format(wrapper::ImageType type) -> VkFormat {
     }
 }
 
-auto get_image_usage(wrapper::ImageType type) -> VkImageUsageFlags {
+auto get_image_usage(core::memory::ImageType type) -> VkImageUsageFlags {
     switch (type) {
-        case wrapper::ImageType::TEXTURE_2D:
+        case core::memory::ImageType::TEXTURE_2D:
             return VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-        case wrapper::ImageType::DEPTH_2D:
+        case core::memory::ImageType::DEPTH_2D:
             return VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
         default:
             throw std::invalid_argument("Unsupported image type.");
     }
 }
 
-// auto create_material_desc_pool(VkDevice device, uint32_t descCount) -> wrapper::DescriptorPool {
+// auto create_material_desc_pool(VkDevice device, uint32_t descCount) -> core::descriptors::DescriptorPool {
 //     const auto layout = shader::create_material_descset_layout(device);
 //     const auto poolSizes = shader::get_material_desc_pool_sizes(descCount);
 
-//     return wrapper::DescriptorPool{
+//     return core::descriptors::DescriptorPool{
 //         device,
 //         layout,
 //         poolSizes,
@@ -123,8 +123,8 @@ auto get_image_usage(wrapper::ImageType type) -> VkImageUsageFlags {
 } // namespace
 
 MemoryManager::MemoryManager(
-    vulkan::Instance& instance,
-    vulkan::Device& device)
+    core::device::Instance& instance,
+    core::device::Device& device)
 : m_allocator{create_vma_allocator(instance, device)}
 , m_device{device.getDevice()}
 , m_descriptorPool{
@@ -150,9 +150,9 @@ MemoryManager::~MemoryManager()
 
 auto MemoryManager::createBuffer(
     const VkDeviceSize size,
-    wrapper::BufferType type,
+    core::memory::BufferType type,
     MemoryUsage usage
-) -> wrapper::Buffer {
+) -> core::memory::Buffer {
     VmaAllocationCreateInfo allocInfo{};
     allocInfo.usage = get_memory_usage(usage);
     allocInfo.flags = buffer_type_to_flags(type);
@@ -184,7 +184,7 @@ auto MemoryManager::createBuffer(
         throw std::runtime_error("Failed to create buffer.");
     }
 
-    return wrapper::Buffer(
+    return core::memory::Buffer(
         buffer,
         allocation,
         m_allocator,
@@ -195,9 +195,9 @@ auto MemoryManager::createBuffer(
 
 auto MemoryManager::createImage(
     const VkExtent3D& extent,
-    wrapper::ImageType type,
+    core::memory::ImageType type,
     MemoryUsage usage
-) -> wrapper::Image {
+) -> core::memory::Image {
     VmaAllocationCreateInfo allocInfo{};
     allocInfo.usage = get_memory_usage(usage);
     allocInfo.flags = 0; // No special flags for now
@@ -241,7 +241,7 @@ auto MemoryManager::createImage(
     viewInfo.format = imageInfo.format;
     viewInfo.components = {};
 
-    const VkImageAspectFlags aspectMask = (type == wrapper::ImageType::DEPTH_2D) ?
+    const VkImageAspectFlags aspectMask = (type == core::memory::ImageType::DEPTH_2D) ?
         VK_IMAGE_ASPECT_DEPTH_BIT :
         VK_IMAGE_ASPECT_COLOR_BIT;
 
@@ -254,14 +254,14 @@ auto MemoryManager::createImage(
     };
 
     VkImageView view;
-    vlk::CreateImageView(
+    vulkan::CreateImageView(
         m_device,
         &viewInfo,
         nullptr,
         &view
     );
 
-    return wrapper::Image(
+    return core::memory::Image(
         image,
         view,
         allocation,
@@ -273,17 +273,17 @@ auto MemoryManager::createImage(
 auto MemoryManager::copyDataToBuffer(
     const void* data,
     VkDeviceSize size,
-    wrapper::Buffer& buffer,
+    core::memory::Buffer& buffer,
     VkDeviceSize offset
 ) -> void {
-    using Type = wrapper::BufferType;
+    using Type = core::memory::BufferType;
 
     switch (buffer.getType()) {
         case Type::VERTEX:
         case Type::INDEX: {
             auto stagingBuffer = createBuffer(
                 size,
-                wrapper::BufferType::STAGING
+                core::memory::BufferType::STAGING
             );
 
             std::memcpy(stagingBuffer.getMappedData(), data, size);
@@ -303,8 +303,8 @@ auto MemoryManager::copyDataToBuffer(
 }
 
 auto MemoryManager::copy(
-    wrapper::Buffer& srcBuffer,
-    wrapper::Buffer& dstBuffer,
+    core::memory::Buffer& srcBuffer,
+    core::memory::Buffer& dstBuffer,
     VkDeviceSize size,
     VkDeviceSize srcOffset,
     VkDeviceSize dstOffset
@@ -332,8 +332,8 @@ auto MemoryManager::copy(
 }
 
 auto MemoryManager::copy(
-    wrapper::Buffer& srcBuffer,
-    wrapper::Image& dstImage,
+    core::memory::Buffer& srcBuffer,
+    core::memory::Image& dstImage,
     VkExtent3D extent,
     VkDeviceSize srcOffset
 ) -> void {
@@ -355,7 +355,7 @@ auto MemoryManager::copy(
 }
 
 auto MemoryManager::transitionImageLayout(
-    wrapper::Image& image,
+    core::memory::Image& image,
     VkImageLayout oldLayout,
     VkImageLayout newLayout
 ) -> void {
@@ -412,26 +412,26 @@ auto MemoryManager::transitionImageLayout(
     m_transferQueue.waitIdle();
 }
 
-// auto MemoryManager::map(const wrapper::Buffer& buffer) -> void*
+// auto MemoryManager::map(const core::memory::Buffer& buffer) -> void*
 // {
 //     void* data;
 //     vmaMapMemory(m_allocator, buffer.getAllocation(), &data);
 //     return data;
 // }
 
-// auto MemoryManager::unmap(const wrapper::Buffer& buffer) -> void
+// auto MemoryManager::unmap(const core::memory::Buffer& buffer) -> void
 // {
 //     vmaUnmapMemory(m_allocator, buffer.getAllocation());
 // }
 
-// auto MemoryManager::map(const wrapper::Image& image) -> void*
+// auto MemoryManager::map(const core::memory::Image& image) -> void*
 // {
 //     void* data;
 //     vmaMapMemory(m_allocator, image.getAllocation(), &data);
 //     return data;
 // }
 
-// auto MemoryManager::unmap(const wrapper::Image& image) -> void
+// auto MemoryManager::unmap(const core::memory::Image& image) -> void
 // {
 //     vmaUnmapMemory(m_allocator, image.getAllocation());
 // }

@@ -6,7 +6,7 @@
 
 #include <assimp/mesh.h>
 
-#include "wrapper/Buffer.hpp"
+#include "core/memory/Buffer.hpp"
 #include "shader/Vertex.hpp"
 #include "MemoryManager.hpp"
 
@@ -19,12 +19,12 @@ public:
     : m_vertexBuffer(
         memoryManager.createBuffer(
             sizeof(shader::Vertex) * mesh->mNumVertices,
-            wrapper::BufferType::VERTEX
+            core::memory::BufferType::VERTEX
         ))
     , m_indexBuffer(
         memoryManager.createBuffer(
             sizeof(uint32_t) * mesh->mNumFaces * 3,
-            wrapper::BufferType::INDEX
+            core::memory::BufferType::INDEX
         ))
     , m_indexCount(mesh->mNumFaces * 3)
     , m_materialIndex(mesh->mMaterialIndex)
@@ -106,10 +106,10 @@ public:
     }
 
     [[nodiscard]]
-    auto getVertexBuffer() const -> const wrapper::Buffer& { return m_vertexBuffer; }
+    auto getVertexBuffer() const -> const core::memory::Buffer& { return m_vertexBuffer; }
 
     [[nodiscard]]
-    auto getIndexBuffer() const -> const wrapper::Buffer& { return m_indexBuffer; }
+    auto getIndexBuffer() const -> const core::memory::Buffer& { return m_indexBuffer; }
 
     [[nodiscard]]
     auto getIndexCount() const -> uint32_t { return m_indexCount; }
@@ -118,8 +118,8 @@ public:
     auto getMaterialIndex() const -> uint32_t { return m_materialIndex; }
 
 private:
-    wrapper::Buffer m_vertexBuffer;
-    wrapper::Buffer m_indexBuffer;
+    core::memory::Buffer m_vertexBuffer;
+    core::memory::Buffer m_indexBuffer;
 
     uint32_t m_indexCount;
     uint32_t m_materialIndex;

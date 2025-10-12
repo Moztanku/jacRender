@@ -2,7 +2,7 @@
  * @file main.cpp
  * @brief Main entry point for the application.
  */
-#include "vulkan/Window.hpp"
+#include "Window.hpp"
 #include "Renderer.hpp"
 
 #include <array>
@@ -37,7 +37,7 @@ auto get_model_matrices() -> std::array<glm::mat4, 100> {
 }
 
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) -> int {
-    vulkan::Window window{};
+    Window window{};
     Renderer renderer(window);
 
     auto& camera = renderer.getCamera();

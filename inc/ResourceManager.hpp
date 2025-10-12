@@ -13,7 +13,7 @@
 
 class ResourceManager {
 public:
-    ResourceManager(vulkan::Instance& instance, vulkan::Device& device)
+    ResourceManager(core::device::Instance& instance, core::device::Device& device)
     : memoryManager(instance, device)
     , m_defaultDiffuse(std::make_shared<Texture>(memoryManager, "textures/fallback/white.bmp"))
     , m_defaultNormal(std::make_shared<Texture>(memoryManager, "textures/fallback/normal_default.bmp"))

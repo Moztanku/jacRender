@@ -14,7 +14,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "vulkan/utils.hpp"
-#include "vulkan/Shader.hpp"
+#include "core/pipeline/Shader.hpp"
 
 #include "shader/defs_global.hpp"
 #include "shader/defs_instance.hpp"
@@ -22,18 +22,18 @@
 namespace {
 
 [[nodiscard]]
-auto get_default_shaders(vulkan::Device& device) -> std::vector<vulkan::Shader> {
-    std::vector<vulkan::Shader> shaders;
+auto get_default_shaders(core::device::Device& device) -> std::vector<core::pipeline::Shader> {
+    std::vector<core::pipeline::Shader> shaders;
 
     shaders.emplace_back(
         device,
         std::filesystem::path{common::SHADER_DIRECTORY} / "generic.vert.spv",
-        vulkan::Shader::Type::Vertex
+        core::pipeline::Shader::Type::Vertex
     );
     shaders.emplace_back(
         device,
         std::filesystem::path{common::SHADER_DIRECTORY} / "generic.frag.spv",
-        vulkan::Shader::Type::Fragment
+        core::pipeline::Shader::Type::Fragment
     );
 
     return shaders;
@@ -42,7 +42,7 @@ auto get_default_shaders(vulkan::Device& device) -> std::vector<vulkan::Shader> 
 } // namespace
 
 Renderer::Renderer(
-    vulkan::Window& window,
+    Window& window,
     [[maybe_unused]] const Config& config)
     : m_window{window}
     , m_instance{vulkan::get_default_validation_layers()}
@@ -67,7 +67,7 @@ Renderer::Renderer(
                 m_swapchain.getExtent().height,
                 1
             },
-            wrapper::ImageType::DEPTH_2D,
+            core::memory::ImageType::DEPTH_2D,
             MemoryUsage::GPU_ONLY
         )
     }
@@ -96,7 +96,7 @@ Renderer::Renderer(
         m_cameraUBOs.emplace_back(
             m_resourceManager.getMemoryManager().createBuffer(
                 sizeof(shader::CameraUBO),
-                wrapper::BufferType::UNIFORM
+                core::memory::BufferType::UNIFORM
             )
         );
     }
@@ -116,7 +116,7 @@ Renderer::Renderer(
         descriptorWrites[0].descriptorCount = 1;
         descriptorWrites[0].pBufferInfo = &bufferInfo;
 
-        vlk::UpdateDescriptorSets(
+        vulkan::UpdateDescriptorSets(
             m_device.getDevice(),
             static_cast<uint32_t>(descriptorWrites.size()),
             descriptorWrites.data(),
@@ -248,7 +248,7 @@ auto Renderer::render() -> void
     );
 
     // 4. Submit the command buffer to the graphics queue (wait for the image to be available)
-    const wrapper::Queue::SubmitInfo submitInfo{
+    const core::device::Queue::SubmitInfo submitInfo{
         .commandBuffers = {&m_commandBuffer.getCommandBuffer(), 1},
         .waitSemaphore = m_imageAvailable,
         .signalSemaphore = m_renderFinished,
@@ -303,7 +303,7 @@ auto Renderer::draw(const ModelID modelID, const glm::mat4& modelMatrix) -> void
             &pushConstants
         );
 
-        const wrapper::DrawIndexed draw_command{
+        const core::commands::DrawIndexed draw_command{
             mesh->getIndexCount()
         };
         cmd.record(draw_command);

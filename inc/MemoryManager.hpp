@@ -5,17 +5,17 @@
 #pragma once
 
 #include <vulkan/vulkan.h>
-#include "wrapper/vma.hpp"
+#include "core/memory/vma.hpp"
 
 #include <memory>
 
-#include "wrapper/Buffer.hpp"
-#include "wrapper/Image.hpp"
-#include "wrapper/Queue.hpp"
-#include "wrapper/CommandPool.hpp"
-#include "wrapper/DescriptorPool.hpp"
-#include "vulkan/Instance.hpp"
-#include "vulkan/Device.hpp"
+#include "core/memory/Buffer.hpp"
+#include "core/memory/Image.hpp"
+#include "core/device/Queue.hpp"
+#include "core/commands/CommandPool.hpp"
+#include "core/descriptors/DescriptorPool.hpp"
+#include "core/device/Instance.hpp"
+#include "core/device/Device.hpp"
 
 enum class MemoryUsage {
     GPU_ONLY,       // VRAM only, no CPU access
@@ -27,7 +27,7 @@ enum class MemoryUsage {
 
 class MemoryManager {
 public:
-    MemoryManager(vulkan::Instance& instance, vulkan::Device& device);
+    MemoryManager(core::device::Instance& instance, core::device::Device& device);
     ~MemoryManager();
 
     MemoryManager(const MemoryManager&) = delete;
@@ -38,48 +38,48 @@ public:
     [[nodiscard]]
     auto createBuffer(
         const VkDeviceSize size,
-        wrapper::BufferType type,
+        core::memory::BufferType type,
         MemoryUsage usage = MemoryUsage::AUTO
-    ) -> wrapper::Buffer;
+    ) -> core::memory::Buffer;
 
     [[nodiscard]]
     auto createImage(
         const VkExtent3D& extent,
-        wrapper::ImageType type,
+        core::memory::ImageType type,
         MemoryUsage usage = MemoryUsage::AUTO
-    ) -> wrapper::Image;
+    ) -> core::memory::Image;
 
     auto copyDataToBuffer(
         const void* data,
         VkDeviceSize size,
-        wrapper::Buffer& buffer,
+        core::memory::Buffer& buffer,
         VkDeviceSize offset = 0
     ) -> void;
 
     auto copy(
-        wrapper::Buffer& srcBuffer,
-        wrapper::Buffer& dstBuffer,
+        core::memory::Buffer& srcBuffer,
+        core::memory::Buffer& dstBuffer,
         VkDeviceSize size = VK_WHOLE_SIZE,
         VkDeviceSize srcOffset = 0,
         VkDeviceSize dstOffset = 0
     ) -> void;
 
     auto copy(
-        wrapper::Buffer& srcBuffer,
-        wrapper::Image& dstImage,
+        core::memory::Buffer& srcBuffer,
+        core::memory::Image& dstImage,
         VkExtent3D extent,
         VkDeviceSize srcOffset = 0
     ) -> void;
 
     auto transitionImageLayout(
-        wrapper::Image& image,
+        core::memory::Image& image,
         VkImageLayout oldLayout,
         VkImageLayout newLayout
     ) -> void;
 
     // TODO: descriptor sets management
     [[nodiscard]]
-    auto getDescriptorPool() -> wrapper::DescriptorPool& { return m_descriptorPool; }
+    auto getDescriptorPool() -> core::descriptors::DescriptorPool& { return m_descriptorPool; }
 
     [[nodiscard]]
     auto getLayout() -> VkDescriptorSetLayout {
@@ -92,25 +92,25 @@ public:
     }
 
     // [[nodiscard]]
-    // auto map(const wrapper::Buffer& buffer) -> void*;
-    // auto unmap(const wrapper::Buffer& buffer) -> void;
+    // auto map(const core::memory::Buffer& buffer) -> void*;
+    // auto unmap(const core::memory::Buffer& buffer) -> void;
 
     // [[nodiscard]]
-    // auto map(const wrapper::Image& image) -> void*;
-    // auto unmap(const wrapper::Image& image) -> void;
+    // auto map(const core::memory::Image& image) -> void*;
+    // auto unmap(const core::memory::Image& image) -> void;
 
     // transfer buffer/image from transformQueue to targetQueue (e.g. graphics queue)
     //  for now we'll use only one transfer queue, so this is a no-op
-    auto transfer(const wrapper::Buffer& buffer, const wrapper::Queue& targetQueue) -> void;
-    auto transfer(const wrapper::Image& image, const wrapper::Queue& targetQueue) -> void;
+    auto transfer(const core::memory::Buffer& buffer, const core::device::Queue& targetQueue) -> void;
+    auto transfer(const core::memory::Image& image, const core::device::Queue& targetQueue) -> void;
 private:
     VmaAllocator m_allocator;
     VkDevice m_device;
 
     // Descriptors
-    wrapper::DescriptorPool m_descriptorPool;
+    core::descriptors::DescriptorPool m_descriptorPool;
 
     // Transfer
-    wrapper::Queue& m_transferQueue;
-    wrapper::CommandPool m_commandPool;
+    core::device::Queue& m_transferQueue;
+    core::commands::CommandPool m_commandPool;
 };
