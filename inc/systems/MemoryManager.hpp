@@ -1,5 +1,5 @@
 /**
- * @file MemoryManager.hpp
+ * @file systems/MemoryManager.hpp
  * @brief Main memory manager that takes care of memory allocation, mapping, creating buffers, images, etc.
  */
 #pragma once
@@ -16,6 +16,8 @@
 #include "core/descriptors/DescriptorPool.hpp"
 #include "core/device/Instance.hpp"
 #include "core/device/Device.hpp"
+
+namespace systems {
 
 enum class MemoryUsage {
     GPU_ONLY,       // VRAM only, no CPU access
@@ -114,3 +116,5 @@ private:
     core::device::Queue& m_transferQueue;
     core::commands::CommandPool m_commandPool;
 };
+
+} // namespace systems

@@ -6,8 +6,8 @@
 #include "common/defs.hpp"
 #include "vulkan/utils.hpp"
 
-#include "shader/Vertex.hpp"
-#include "shader/defs_instance.hpp"
+#include "shaders/generic/Vertex.hpp"
+#include "shaders/generic/Descriptors.hpp"
 
 namespace {
 
@@ -87,11 +87,11 @@ Pipeline::Pipeline(
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 
-    const auto bindingDescription = shader::Vertex::get_binding_description();
+    const auto bindingDescription = shaders::generic::Vertex::get_binding_description();
     vertexInputInfo.vertexBindingDescriptionCount = 1;
     vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
 
-    const auto attributeDescriptions = shader::Vertex::get_attribute_descriptions();
+    const auto attributeDescriptions = shaders::generic::Vertex::get_attribute_descriptions();
     vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
     vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 
@@ -338,7 +338,7 @@ auto Pipeline::create_pipeline_layout(
     VkPushConstantRange pushConstantRange{};
     pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
     pushConstantRange.offset = 0;
-    pushConstantRange.size = sizeof(shader::PushConstants);
+    pushConstantRange.size = sizeof(shaders::generic::PushConstants);
 
     assert(instanceSetLayout == VK_NULL_HANDLE);
     std::array<VkDescriptorSetLayout, 2> setLayouts = {globalSetLayout, materialSetLayout};

@@ -1,8 +1,10 @@
-#include "Window.hpp"
+#include "graphics/Window.hpp"
 
 #include <stdexcept>
 
 #include <vulkan/utils.hpp>
+
+namespace graphics {
 
 std::atomic<uint8_t> Window::s_windowCount{0};
 
@@ -48,3 +50,5 @@ Window::~Window()
         glfwTerminate();
     }
 }
+
+} // namespace graphics

@@ -1,5 +1,5 @@
 /**
- * @file Model.hpp
+ * @file graphics/Model.hpp
  * @brief Header file for the Model class, which represents a 3D model loaded from a file.
  */
 #pragma once
@@ -9,16 +9,18 @@
 
 #include <assimp/scene.h>
 
-#include "Mesh.hpp"
-#include "Material.hpp"
-#include "ResourceManager.hpp"
+#include "graphics/Mesh.hpp"
+#include "graphics/Material.hpp"
+#include "systems/ResourceManager.hpp"
+
+namespace graphics {
 
 namespace {
 
 [[nodiscard]]
 auto load_meshes(
     const aiScene* scene,
-    MemoryManager& memoryManager
+    systems::MemoryManager& memoryManager
 ) -> std::vector<Mesh> {
     std::vector<Mesh> meshes;
     meshes.reserve(scene->mNumMeshes);
@@ -55,8 +57,8 @@ auto load_meshes(
 auto load_materials(
     const aiScene* scene,
     std::string_view directory,
-    ResourceManager& resourceManager,
-    MemoryManager& memoryManager
+    systems::ResourceManager& resourceManager,
+    systems::MemoryManager& memoryManager
 ) -> std::vector<Material> {
     std::vector<Material> materials;
 
@@ -81,8 +83,8 @@ using Drawable = std::pair<const Mesh*, const Material*>;
 public:
     Model(
         const aiScene* scene,
-        ResourceManager& resourceManager,
-        MemoryManager& memoryManager,
+        systems::ResourceManager& resourceManager,
+        systems::MemoryManager& memoryManager,
         std::string_view directory)
     : m_meshes{load_meshes(scene, memoryManager)}
     , m_materials{load_materials(scene, directory, resourceManager, memoryManager)}
@@ -104,3 +106,5 @@ private:
     std::vector<Mesh> m_meshes;
     std::vector<Material> m_materials;
 };
+
+} // namespace graphics

@@ -1,4 +1,4 @@
-#include "Camera.hpp"
+#include "graphics/Camera.hpp"
 
 #include <cmath>
 #include <tuple>
@@ -7,6 +7,8 @@
 #include <print>
 
 namespace { constexpr bool FREECAM_MODE = true; }
+
+namespace graphics {
 
 Camera::Camera(resolution res, vector position, normal forward, normal up) noexcept :
     m_resolution{res},
@@ -152,3 +154,5 @@ auto Camera::updateProjection() noexcept -> void
         20000.f
     );
 }
+
+} // namespace graphics

@@ -121,7 +121,7 @@ namespace core::pipeline {
 Swapchain::Swapchain(
     device::Device& device,
     device::Surface& surface,
-    Window& window) :
+    graphics::Window& window) :
     m_device{device.getDevice()}
 {
     const auto surface_capabilities = get_surface_capabilities(device.getPhysicalDevice(), surface.getSurface());

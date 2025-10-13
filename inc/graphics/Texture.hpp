@@ -1,5 +1,5 @@
 /**
- * @file Texture.hpp
+ * @file graphics/Texture.hpp
  * @brief Header file for the Texture class, which handles texture loading.
  */
 #pragma once
@@ -9,12 +9,14 @@
 
 #include "stb_image.h"
 
-#include "MemoryManager.hpp"
+#include "systems/MemoryManager.hpp"
 #include "core/memory/Image.hpp"
+
+namespace graphics {
 
 class Texture {
 public:
-    Texture(MemoryManager& memoryManager, const std::filesystem::path& fPath)
+    Texture(systems::MemoryManager& memoryManager, const std::filesystem::path& fPath)
     {
         int32_t width, height, channels;
         stbi_uc* pixels = stbi_load(
@@ -31,7 +33,7 @@ public:
         auto stagingBuffer = memoryManager.createBuffer(
             memorySize,
             core::memory::BufferType::STAGING,
-            MemoryUsage::CPU_TO_GPU
+            systems::MemoryUsage::CPU_TO_GPU
         );
         memoryManager.copyDataToBuffer(
             pixels,
@@ -49,7 +51,7 @@ public:
                     1
                 },
                 core::memory::ImageType::TEXTURE_2D,
-                MemoryUsage::GPU_ONLY
+                systems::MemoryUsage::GPU_ONLY
             )
         );
 
@@ -168,3 +170,5 @@ private:
     VkSampler m_Sampler;
     VkDevice m_Device;
 };
+
+} // namespace graphics

@@ -12,8 +12,8 @@ TODO: look into VulkanMemoryAllocator (VMA) for better memory management
 ## Example usage
 ```cpp
 
-#include "jacRender/Window.hpp"
-#include "jacRender/Renderer.hpp"
+#include "jacRender/graphics/Window.hpp"
+#include "jacRender/graphics/Renderer.hpp"
 
 // some code...
 
@@ -52,25 +52,19 @@ int main() {
 
 ## Structure
 ```
-Window: GLFWWindow wrapper
-Renderer:
-    - ResourceManager:
-        - MemoryManager: Manages Vulkan memory allocations
-        - Model[]:
-            - Mesh&[]
-            - Material&[]
-        - Material[]:
-            - Texture& diffuse, normal, ...
-            - UBO
-            - DescriptorSet
-        - Mesh[]:
-            - VertexBuffer
-            - IndexBuffer
-            - indexCount
-            - materialIndex
-        - Texture[]:
-            - Image
-            - Path
+JacRender
+├──common/          # Common utilities and definitions
+├──core/            # Core abstractions and low-level Vulkan wrappers
+│  ├──commands/         # Command buffer management
+│  ├──descriptors/      # Descriptor sets and layouts
+│  ├──device/           # Vulkan device, physical device, instance, queues
+│  ├──memory/           # Memory management, buffers, images
+│  ├──pipeline/         # Render pipeline related
+|  └──sync/             # Synchronization
+├──graphics/        # High-level graphics abstractions
+├──shaders/         # Shader definitions
+├──systems/         # High-level systems
+└──vulkan/          # Vulkan API bindings and helpers
 ```
 
 ## Assets

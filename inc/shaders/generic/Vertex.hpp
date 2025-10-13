@@ -1,6 +1,6 @@
 /**
- * @file vertex.hpp
- * @brief Vertex structure used in the default shader.
+ * @file shaders/generic/Vertex.hpp
+ * @brief Vertex structure used in the generic shader.
  */
 #pragma once
 
@@ -9,7 +9,7 @@
 #define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
 #include <glm/glm.hpp>
 
-namespace shader {
+namespace shaders::generic {
 
 struct Vertex {
     glm::vec3 position;
@@ -58,4 +58,4 @@ struct Vertex {
     }
 };
     
-} // namespace shader
+} // namespace shaders::generic

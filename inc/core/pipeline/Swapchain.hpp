@@ -14,6 +14,7 @@
 #include "vulkan/api.hpp"
 #include "core/device/Queue.hpp"
 
+// TODO: Swapchain should go to graphics/Swapchain.hpp
 namespace core::pipeline {
 
 class Swapchain {
@@ -21,7 +22,7 @@ public:
     Swapchain(
         device::Device& device,
         device::Surface& surface,
-        Window& window
+        graphics::Window& window
     );
     ~Swapchain();
 

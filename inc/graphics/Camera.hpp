@@ -1,5 +1,5 @@
 /**
- * @file Camera.hpp
+ * @file graphics/Camera.hpp
  * @brief Camera class handles view and projection matrices for 3D rendering.
  */
 #pragma once
@@ -8,6 +8,8 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+
+namespace graphics {
 
 class Camera
 {
@@ -62,3 +64,5 @@ class Camera
         auto updateView() noexcept -> void;
         auto updateProjection() noexcept -> void;
 }; // class Camera
+
+} // namespace graphics

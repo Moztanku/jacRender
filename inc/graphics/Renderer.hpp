@@ -1,5 +1,5 @@
 /**
- * @file Renderer.hpp
+ * @file graphics/Renderer.hpp
  * @brief Header file for the Renderer class, which is respoinsible for all the drawing and handles the
  * rendering pipeline.
  */
@@ -12,7 +12,7 @@
 
 #include "vulkan/api.hpp"
 #include "core/device/Instance.hpp"
-#include "Window.hpp"
+#include "graphics/Window.hpp"
 #include "core/device/Surface.hpp"
 #include "core/device/Device.hpp"
 #include "core/pipeline/Swapchain.hpp"
@@ -23,10 +23,12 @@
 #include "core/descriptors/DescriptorPool.hpp"
 #include "core/sync/Sync.hpp"
 
-#include "Texture.hpp"
-#include "Model.hpp"
-#include "ResourceManager.hpp"
-#include "Camera.hpp"
+#include "graphics/Texture.hpp"
+#include "graphics/Model.hpp"
+#include "systems/ResourceManager.hpp"
+#include "graphics/Camera.hpp"
+
+namespace graphics {
 
 class Renderer {
 public:
@@ -66,7 +68,7 @@ private:
     core::device::Instance m_instance;
     core::device::Surface m_surface;
     core::device::Device m_device;
-    ResourceManager m_resourceManager;
+    systems::ResourceManager m_resourceManager;
 
     core::pipeline::Swapchain m_swapchain;
     const uint8_t m_maxFramesInFlight;
@@ -103,3 +105,5 @@ private:
 
     auto draw(const ModelID modelID, const glm::mat4& modelMatrix) -> void;
 };
+
+} // namespace graphics

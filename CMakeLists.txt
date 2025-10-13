@@ -77,14 +77,13 @@ target_sources(${PROJECT_NAME}
     ${SRC_DIR}/vulkan/utils.cpp
     ${SRC_DIR}/vulkan/api.cpp
     # Shader definitions
-    ${SRC_DIR}/shader/defs_global.cpp
-    ${SRC_DIR}/shader/defs_material.cpp
-    ${SRC_DIR}/shader/defs_instance.cpp
-    # High level abstractions
-    ${SRC_DIR}/Window.cpp
-    ${SRC_DIR}/Renderer.cpp
-    ${SRC_DIR}/MemoryManager.cpp
-    ${SRC_DIR}/Camera.cpp)
+    ${SRC_DIR}/shaders/generic/Descriptors.cpp
+    # Systems
+    ${SRC_DIR}/systems/MemoryManager.cpp
+    # Graphics
+    ${SRC_DIR}/graphics/Window.cpp
+    ${SRC_DIR}/graphics/Renderer.cpp
+    ${SRC_DIR}/graphics/Camera.cpp)
 
 target_include_directories(${PROJECT_NAME}
     PRIVATE

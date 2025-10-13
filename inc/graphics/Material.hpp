@@ -1,16 +1,16 @@
 /**
- * @file Material.hpp
+ * @file graphics/Material.hpp
  * @brief Header file for the Material class, which represents a material with its properties and textures
  */
 #pragma once
 
 #include <assimp/material.h>
 
-#include "Texture.hpp"
-#include "ResourceManager.hpp"
-#include "MemoryManager.hpp"
+#include "graphics/Texture.hpp"
+#include "systems/ResourceManager.hpp"
+#include "systems/MemoryManager.hpp"
 #include "core/memory/Buffer.hpp"
-#include "shader/defs_material.hpp"
+#include "shaders/generic/Descriptors.hpp"
 
 #include <set>
 #include <map>
@@ -23,8 +23,8 @@ auto load_texture(
     const aiMaterial* material,
     aiTextureType type,
     std::string_view dir,
-    ResourceManager& resourceManager
-) -> std::shared_ptr<Texture> {
+    systems::ResourceManager& resourceManager
+) -> std::shared_ptr<graphics::Texture> {
     const uint32_t texCount{material->GetTextureCount(type)};
 
     if (texCount == 0) {
@@ -55,18 +55,20 @@ auto load_texture(
 
 } // namespace
 
+namespace graphics {
+
 class Material {
 public:
     Material(
         const aiMaterial* material,
-        ResourceManager& resourceManager,
-        MemoryManager& memoryManager,
+        systems::ResourceManager& resourceManager,
+        systems::MemoryManager& memoryManager,
         std::string_view directory)
     : m_uboBuffer{
         memoryManager.createBuffer(
-            sizeof(shader::MaterialUBO),
+            sizeof(shaders::generic::MaterialUBO),
             core::memory::BufferType::UNIFORM,
-            MemoryUsage::CPU_TO_GPU)}
+            systems::MemoryUsage::CPU_TO_GPU)}
     , m_descriptorSet{memoryManager.getDescriptorPool().allocateDescriptorSets(1)[0]}
     , m_diffuseTexture{load_texture(material, aiTextureType_DIFFUSE, directory, resourceManager)}
     , m_normalTexture{load_texture(material, aiTextureType_NORMALS, directory, resourceManager)}
@@ -79,7 +81,7 @@ public:
         VkDescriptorBufferInfo bufferInfo{};
         bufferInfo.buffer = m_uboBuffer.getBuffer();
         bufferInfo.offset = 0;
-        bufferInfo.range  = sizeof(shader::MaterialUBO);
+        bufferInfo.range  = sizeof(shaders::generic::MaterialUBO);
 
         descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         descriptorWrites[0].dstSet = m_descriptorSet;
@@ -123,7 +125,7 @@ public:
 
         memoryManager.copyDataToBuffer(
             &m_uboData,
-            sizeof(shader::MaterialUBO),
+            sizeof(shaders::generic::MaterialUBO),
             m_uboBuffer
         );
     }
@@ -132,7 +134,7 @@ public:
     auto getDescriptorSet() const -> VkDescriptorSet { return m_descriptorSet; }
 
 private:
-    shader::MaterialUBO m_uboData{};
+    shaders::generic::MaterialUBO m_uboData{};
     core::memory::Buffer m_uboBuffer;
     VkDescriptorSet m_descriptorSet;
 
@@ -141,3 +143,5 @@ private:
     const std::shared_ptr<Texture> m_specularTexture;
     const std::shared_ptr<Texture> m_emissiveTexture;
 };
+
+} // namespace graphics

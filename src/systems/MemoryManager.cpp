@@ -1,8 +1,8 @@
-#include "MemoryManager.hpp"
+#include "systems/MemoryManager.hpp"
 
 #include <cstring>
 
-#include "shader/defs_material.hpp"
+#include "shaders/generic/Descriptors.hpp"
 
 namespace {
 
@@ -29,18 +29,18 @@ auto create_vma_allocator(core::device::Instance& instance, core::device::Device
     return allocator;
 }
 
-auto get_memory_usage(MemoryUsage usage) -> VmaMemoryUsage
+auto get_memory_usage(systems::MemoryUsage usage) -> VmaMemoryUsage
 {
     switch (usage) {
-        case MemoryUsage::GPU_ONLY:
+        case systems::MemoryUsage::GPU_ONLY:
             return VMA_MEMORY_USAGE_GPU_ONLY;
-        case MemoryUsage::CPU_ONLY:
+        case systems::MemoryUsage::CPU_ONLY:
             return VMA_MEMORY_USAGE_CPU_ONLY;
-        case MemoryUsage::CPU_TO_GPU:
+        case systems::MemoryUsage::CPU_TO_GPU:
             return VMA_MEMORY_USAGE_CPU_TO_GPU;
-        case MemoryUsage::GPU_TO_CPU:
+        case systems::MemoryUsage::GPU_TO_CPU:
             return VMA_MEMORY_USAGE_GPU_TO_CPU;
-        case MemoryUsage::AUTO:
+        case systems::MemoryUsage::AUTO:
             return VMA_MEMORY_USAGE_AUTO;
         default:
             throw std::invalid_argument("Unsupported memory usage.");
@@ -122,6 +122,8 @@ auto get_image_usage(core::memory::ImageType type) -> VkImageUsageFlags {
 
 } // namespace
 
+namespace systems {
+
 MemoryManager::MemoryManager(
     core::device::Instance& instance,
     core::device::Device& device)
@@ -129,8 +131,8 @@ MemoryManager::MemoryManager(
 , m_device{device.getDevice()}
 , m_descriptorPool{
     m_device,
-    shader::create_material_descset_layout(m_device),
-    shader::get_material_desc_pool_sizes(100),
+    shaders::generic::create_material_descset_layout(m_device),
+    shaders::generic::get_material_desc_pool_sizes(100),
     100u
 }
 // , m_transferQueue{device.getTransferQueue()}
@@ -435,3 +437,5 @@ auto MemoryManager::transitionImageLayout(
 // {
 //     vmaUnmapMemory(m_allocator, image.getAllocation());
 // }
+
+} // namespace systems

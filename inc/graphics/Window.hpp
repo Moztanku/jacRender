@@ -1,5 +1,5 @@
 /**
- * @file Window.hpp
+ * @file graphics/Window.hpp
  * @brief Header file for the Window class, which creates the GLFW window for Vulkan rendering.
  */
 #pragma once
@@ -12,6 +12,8 @@
 #include <vector>
 
 #include <print>
+
+namespace graphics {
 
 class Window {
 public:
@@ -69,3 +71,5 @@ private:
 
     static std::atomic<uint8_t> s_windowCount;
 };
+
+} // namespace graphics

@@ -1,5 +1,5 @@
 /**
- * @file Mesh.hpp
+ * @file graphics/Mesh.hpp
  * @brief Header file for the Mesh class, which represents a 3D mesh with vertices and indices.
  */
 #pragma once
@@ -7,18 +7,20 @@
 #include <assimp/mesh.h>
 
 #include "core/memory/Buffer.hpp"
-#include "shader/Vertex.hpp"
-#include "MemoryManager.hpp"
+#include "shaders/generic/Vertex.hpp"
+#include "systems/MemoryManager.hpp"
+
+namespace graphics {
 
 class Mesh {
 public:
     Mesh(
-        MemoryManager& memoryManager,
+        systems::MemoryManager& memoryManager,
         const aiMesh* mesh,
         aiMatrix4x4 transform)
     : m_vertexBuffer(
         memoryManager.createBuffer(
-            sizeof(shader::Vertex) * mesh->mNumVertices,
+            sizeof(shaders::generic::Vertex) * mesh->mNumVertices,
             core::memory::BufferType::VERTEX
         ))
     , m_indexBuffer(
@@ -33,7 +35,7 @@ public:
             throw std::runtime_error("Mesh is missing positions or faces.");
         }
 
-        std::vector<shader::Vertex> vertices;
+        std::vector<shaders::generic::Vertex> vertices;
         std::vector<uint32_t> indices;
 
         vertices.reserve(mesh->mNumVertices);
@@ -45,7 +47,7 @@ public:
         }
 
         for (uint32_t i = 0; i < mesh->mNumVertices; i++) {
-            shader::Vertex vertex{};
+            shaders::generic::Vertex vertex{};
 
             // Apply transform to position
             aiVector3D transformedPos = transform * mesh->mVertices[i];
@@ -94,7 +96,7 @@ public:
 
         memoryManager.copyDataToBuffer(
             vertices.data(),
-            sizeof(shader::Vertex) * vertices.size(),
+            sizeof(shaders::generic::Vertex) * vertices.size(),
             m_vertexBuffer
         );
 
@@ -124,3 +126,5 @@ private:
     uint32_t m_indexCount;
     uint32_t m_materialIndex;
 };
+
+} // namespace graphics

@@ -7,15 +7,16 @@
 #include <vulkan/vulkan.h>
 
 #include "core/device/Instance.hpp"
-#include "Window.hpp"
+#include "graphics/Window.hpp"
 
 namespace core::device {
 
 class Surface {
 public:
+    // TODO: Use GLFWWindow handle directly instead of Window class
     Surface(
         Instance& instance,
-        Window& window
+        graphics::Window& window
     );
     ~Surface();
 

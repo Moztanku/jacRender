@@ -14,7 +14,7 @@ namespace core::device {
 
 Surface::Surface(
     Instance& instance,
-    Window& window) :
+    graphics::Window& window) :
     m_instance{instance.getInstance()}
 {
     const VkResult result = glfwCreateWindowSurface(

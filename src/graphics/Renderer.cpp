@@ -1,4 +1,4 @@
-#include "Renderer.hpp"
+#include "graphics/Renderer.hpp"
 
 #include <stdexcept>
 #include <format>
@@ -16,8 +16,7 @@
 #include "vulkan/utils.hpp"
 #include "core/pipeline/Shader.hpp"
 
-#include "shader/defs_global.hpp"
-#include "shader/defs_instance.hpp"
+#include "shaders/generic/Descriptors.hpp"
 
 namespace {
 
@@ -41,6 +40,8 @@ auto get_default_shaders(core::device::Device& device) -> std::vector<core::pipe
 
 } // namespace
 
+namespace graphics {
+
 Renderer::Renderer(
     Window& window,
     [[maybe_unused]] const Config& config)
@@ -53,8 +54,8 @@ Renderer::Renderer(
     , m_maxFramesInFlight{static_cast<uint8_t>(m_swapchain.getImageCount())}
     , m_descriptorPool{
         m_device.getDevice(),
-        shader::create_global_descset_layout(m_device.getDevice()),
-        shader::get_global_desc_pool_sizes(m_maxFramesInFlight),
+        shaders::generic::create_global_descset_layout(m_device.getDevice()),
+        shaders::generic::get_global_desc_pool_sizes(m_maxFramesInFlight),
         m_maxFramesInFlight
     }
     , m_globalDescriptorSets{
@@ -68,7 +69,7 @@ Renderer::Renderer(
                 1
             },
             core::memory::ImageType::DEPTH_2D,
-            MemoryUsage::GPU_ONLY
+            systems::MemoryUsage::GPU_ONLY
         )
     }
     , m_pipeline{
@@ -95,7 +96,7 @@ Renderer::Renderer(
     for (uint8_t i = 0; i < m_maxFramesInFlight; ++i) {
         m_cameraUBOs.emplace_back(
             m_resourceManager.getMemoryManager().createBuffer(
-                sizeof(shader::CameraUBO),
+                sizeof(shaders::generic::CameraUBO),
                 core::memory::BufferType::UNIFORM
             )
         );
@@ -105,7 +106,7 @@ Renderer::Renderer(
         VkDescriptorBufferInfo bufferInfo{};
         bufferInfo.buffer = m_cameraUBOs[i].getBuffer();
         bufferInfo.offset = 0;
-        bufferInfo.range = sizeof(shader::CameraUBO);
+        bufferInfo.range = sizeof(shaders::generic::CameraUBO);
 
         std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
         descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -236,7 +237,7 @@ auto Renderer::render() -> void
     m_commandBuffer.end();
 
     // 3.5 Update uniform buffer for the current frame (now without model matrix)
-    static shader::CameraUBO ubo{};
+    static shaders::generic::CameraUBO ubo{};
     ubo.view = m_camera.getView();
     ubo.proj = m_camera.getProjection();
     ubo.proj[1][1] *= -1; // Vulkan uses a different coordinate system
@@ -285,7 +286,7 @@ auto Renderer::draw(const ModelID modelID, const glm::mat4& modelMatrix) -> void
         };
         cmd.bindDescriptorSets(descriptorSets, m_pipeline.getPipelineLayout());
 
-        shader::PushConstants pushConstants{};
+        shaders::generic::PushConstants pushConstants{};
         pushConstants.model = modelMatrix;
 
         // pushConstants.color = material->getColorTint();
@@ -299,7 +300,7 @@ auto Renderer::draw(const ModelID modelID, const glm::mat4& modelMatrix) -> void
             m_pipeline.getPipelineLayout(),
             VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
             0,
-            sizeof(shader::PushConstants),
+            sizeof(shaders::generic::PushConstants),
             &pushConstants
         );
 
@@ -309,3 +310,5 @@ auto Renderer::draw(const ModelID modelID, const glm::mat4& modelMatrix) -> void
         cmd.record(draw_command);
     }
 }
+
+} // namespace graphics
