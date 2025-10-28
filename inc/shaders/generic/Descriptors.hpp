@@ -20,6 +20,14 @@ struct CameraUBO {
     glm::vec3 position;
 };
 
+constexpr uint8_t MAX_LIGHTS = 10;
+
+struct LightUBO {
+    glm::uint32 lightCount;
+    glm::vec3 lightPositions[MAX_LIGHTS];
+    glm::vec3 lightColors[MAX_LIGHTS];
+};
+
 [[nodiscard]]
 auto create_global_descset_layout(VkDevice device) -> VkDescriptorSetLayout;
 

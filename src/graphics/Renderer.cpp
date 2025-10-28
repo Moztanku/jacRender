@@ -92,11 +92,19 @@ Renderer::Renderer(
 {
     // Create uniform buffers
     m_cameraUBOs.reserve(m_maxFramesInFlight);
+    m_lightUBOs.reserve(m_maxFramesInFlight);
 
     for (uint8_t i = 0; i < m_maxFramesInFlight; ++i) {
         m_cameraUBOs.emplace_back(
             m_resourceManager.getMemoryManager().createBuffer(
                 sizeof(shaders::generic::CameraUBO),
+                core::memory::BufferType::UNIFORM
+            )
+        );
+
+        m_lightUBOs.emplace_back(
+            m_resourceManager.getMemoryManager().createBuffer(
+                sizeof(shaders::generic::LightUBO),
                 core::memory::BufferType::UNIFORM
             )
         );
@@ -108,7 +116,7 @@ Renderer::Renderer(
         bufferInfo.offset = 0;
         bufferInfo.range = sizeof(shaders::generic::CameraUBO);
 
-        std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
+        std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
         descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         descriptorWrites[0].dstSet = m_globalDescriptorSets[i];
         descriptorWrites[0].dstBinding = 0;
@@ -116,6 +124,19 @@ Renderer::Renderer(
         descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         descriptorWrites[0].descriptorCount = 1;
         descriptorWrites[0].pBufferInfo = &bufferInfo;
+
+        VkDescriptorBufferInfo lightBufferInfo{};
+        lightBufferInfo.buffer = m_lightUBOs[i].getBuffer();
+        lightBufferInfo.offset = 0;
+        lightBufferInfo.range = sizeof(shaders::generic::LightUBO);
+
+        descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrites[1].dstSet = m_globalDescriptorSets[i];
+        descriptorWrites[1].dstBinding = 1;
+        descriptorWrites[1].dstArrayElement = 0;
+        descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        descriptorWrites[1].descriptorCount = 1;
+        descriptorWrites[1].pBufferInfo = &lightBufferInfo;
 
         vulkan::UpdateDescriptorSets(
             m_device.getDevice(),
@@ -246,6 +267,15 @@ auto Renderer::render() -> void
         &ubo,
         sizeof(ubo),
         m_cameraUBOs[m_currentFrame]
+    );
+
+    static shaders::generic::LightUBO lightUbo{};
+    lightUbo.lightCount = 5;
+    
+    m_resourceManager.getMemoryManager().copyDataToBuffer(
+        &lightUbo,
+        sizeof(lightUbo),
+        m_lightUBOs[m_currentFrame]
     );
 
     // 4. Submit the command buffer to the graphics queue (wait for the image to be available)

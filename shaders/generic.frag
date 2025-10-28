@@ -7,6 +7,13 @@ layout(set = 0, binding = 0) uniform CameraUBO {
     vec3 position;
 } camera;
 
+layout(set = 0, binding = 1) uniform LightUBO {
+    uint lightCount;
+    // Up to 10 lights at once
+    vec3 lightPositions[10];
+    vec3 lightColors[10];
+} lights;
+
 // Set 1: Material UBOs
 layout(set = 1, binding = 0) uniform MaterialUBO {
     float placeholder;
@@ -49,4 +56,6 @@ void main() {
     finalColor *= vignette;
 
     outColor = vec4(finalColor, pc.color.a);
+
+    outColor.a = 1.0 * lights.lightCount / 10.0;
 }

@@ -82,6 +82,7 @@ private:
     core::commands::CommandPool m_commandPool;
 
     std::vector<core::memory::Buffer> m_cameraUBOs{};
+    std::vector<core::memory::Buffer> m_lightUBOs{};
 
     std::vector<core::sync::Semaphore> m_imageAvailableVec{};
     std::vector<core::sync::Semaphore> m_renderFinishedVec{};

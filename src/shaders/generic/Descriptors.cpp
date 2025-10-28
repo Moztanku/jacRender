@@ -5,14 +5,20 @@
 namespace {
 
 [[nodiscard]]
-constexpr auto get_global_descset_layout_bindings() -> std::array<VkDescriptorSetLayoutBinding, 1> {
-    std::array<VkDescriptorSetLayoutBinding, 1> bindings{};
+constexpr auto get_global_descset_layout_bindings() -> std::array<VkDescriptorSetLayoutBinding, 2> {
+    std::array<VkDescriptorSetLayoutBinding, 2> bindings{};
 
     auto& cameraUbo = bindings[0];
     cameraUbo.binding = 0;
     cameraUbo.descriptorCount = 1;
     cameraUbo.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     cameraUbo.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+
+    auto& lightUbo = bindings[1];
+    lightUbo.binding = 1;
+    lightUbo.descriptorCount = 1;
+    lightUbo.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    lightUbo.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 
     return bindings;
 }
@@ -78,10 +84,13 @@ auto create_global_descset_layout(VkDevice device) -> VkDescriptorSetLayout {
 
 [[nodiscard]]
 auto get_global_desc_pool_sizes(uint32_t descCount) -> std::vector<VkDescriptorPoolSize> {
-    std::vector<VkDescriptorPoolSize> poolSizes(1);
+    std::vector<VkDescriptorPoolSize> poolSizes(2);
 
     poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     poolSizes[0].descriptorCount = descCount;
+
+    poolSizes[1].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    poolSizes[1].descriptorCount = descCount;
 
     return poolSizes;
 }
