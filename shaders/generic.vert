@@ -5,13 +5,20 @@ layout(set = 0, binding = 0) uniform CameraUBO {
     mat4 view;
     mat4 proj;
     vec3 position;
+    uint debugConfig;
 } camera;
 
+struct PointLight {
+    vec3 position;
+    vec3 color;
+    float intensity;
+    float decay;
+    float maxDistance;
+};
+
 layout(set = 0, binding = 1) uniform LightUBO {
-    uint lightCount;
-    // Up to 10 lights at once
-    vec3 lightPositions[10];
-    vec3 lightColors[10];
+    PointLight pointLights[MAX_POINT_LIGHTS];
+    uint pointLightCount;
 } lights;
 
 // Set 1: Material UBOs

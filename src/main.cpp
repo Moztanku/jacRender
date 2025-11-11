@@ -36,7 +36,31 @@ auto get_model_matrices() -> std::array<glm::mat4, 100> {
     return modelMatrices;
 }
 
+template <typename T>
+void debug_print(T x) {
+    if constexpr (std::is_same_v<T, float> || std::is_same_v<T, double>) {
+        std::print("{:.2f}", x);
+    } else {
+        std::print("{}", x);
+    }
+
+    std::print("\r");
+}
+
+template<typename T, typename... Rest>
+void debug_print(T x, Rest... rest) {
+    if constexpr (std::is_same_v<T, float> || std::is_same_v<T, double>) {
+        std::print("{:.2f} ", x);
+    } else {
+        std::print("{} ", x);
+    }
+
+    debug_print(rest...);
+}
+
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) -> int {
+    const std::chrono::high_resolution_clock::time_point program_start = std::chrono::high_resolution_clock::now();
+
     graphics::Window window{};
     graphics::Renderer renderer(window);
 
@@ -56,6 +80,9 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) -> int {
         // Rotation
         GLFW_KEY_LEFT_BRACKET,  // Roll left
         GLFW_KEY_RIGHT_BRACKET, // Roll right
+        // Debug
+        GLFW_KEY_1,
+        GLFW_KEY_2
     };
 
     const auto model = renderer.loadModel("models/Character_Male.fbx").value();
@@ -63,12 +90,15 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) -> int {
     const auto modelMatrices = get_model_matrices();
 
     while (!window.shouldClose()) {
-        const std::chrono::high_resolution_clock::time_point begin = std::chrono::high_resolution_clock::now();
+        const std::chrono::high_resolution_clock::time_point frame_start = std::chrono::high_resolution_clock::now();
 
         const auto events = window.pollEvents(keysToPoll);
 
         glm::vec3 cameraMovement{0.f};
         glm::vec3 cameraRotation{0.f};
+        
+        static bool keyLock1 = false;
+        static bool keyLock2 = false;
         for (const auto& [event, key] : events)
             if (event == GLFW_PRESS)
                 switch (key) {
@@ -82,7 +112,21 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) -> int {
                     // Rotation
                     case GLFW_KEY_LEFT_BRACKET:  cameraRotation.z += cameraSpeed; break;
                     case GLFW_KEY_RIGHT_BRACKET: cameraRotation.z -= cameraSpeed; break;
+                    // Debug
+                    case GLFW_KEY_1:
+                        renderer.DEBUG_1 = keyLock1 ? renderer.DEBUG_1 : !renderer.DEBUG_1;
+                        keyLock1 = true;
+                        break;
+                    case GLFW_KEY_2:
+                        renderer.m_lightCount = keyLock2 ? renderer.m_lightCount : (renderer.m_lightCount + 1) % 2;
+                        keyLock2 = true; 
+                        break;
                 }
+            else if (event == GLFW_RELEASE)
+                switch (key) {
+                    case GLFW_KEY_1: keyLock1 = false; break;
+                    case GLFW_KEY_2: keyLock2 = false; break;
+                };
 
         camera.move(cameraMovement);
         camera.roll(cameraRotation.z);
@@ -91,13 +135,38 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) -> int {
             renderer.submit(model, modelMatrix);
         }
 
+
+        const float current_time = std::chrono::duration<float>(
+            frame_start - program_start
+        ).count();
+
+        const float RADIUS = 10.0f;
+        const float SECS_PER_REV = 5.0f;
+        const float x = RADIUS * std::cos((current_time / SECS_PER_REV) * 2.0f * glm::pi<float>());
+        const float z = RADIUS * std::sin((current_time / SECS_PER_REV) * 2.0f * glm::pi<float>());
+        const float y = 5.0f;
+        
+        renderer.setLightPos(glm::vec3{x, y, z});
+        // renderer.setLightPos(camera.getPosition());
+
         renderer.render();
 
-        const std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
-        const std::chrono::duration<float, std::milli> duration = end - begin;
+        const std::chrono::high_resolution_clock::time_point frame_end = std::chrono::high_resolution_clock::now();
+        const std::chrono::duration<float, std::milli> frame_duration = frame_end - frame_start;
 
-        const float FPS = 1000.f / duration.count();
-        // std::println("FPS: {:.2f}", FPS);
+        const float FPS = 1000.f / frame_duration.count();
+
+        debug_print(
+            "Camera: (",
+            camera.getPosition().x,
+            camera.getPosition().y,
+            camera.getPosition().z,
+            "\b) Light: (",
+            x,
+            y,
+            z,
+            "\b)"
+        );
     }
 
     return 0;

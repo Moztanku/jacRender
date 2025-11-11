@@ -103,10 +103,13 @@ target_compile_options(${PROJECT_NAME}
     $<$<CONFIG:Debug>:${DEBUG_FLAGS}>
     $<$<CONFIG:Release>:${RELEASE_FLAGS}>)
 
+set(MAX_POINT_LIGHTS 10)
+
 target_compile_definitions(${PROJECT_NAME}
     PRIVATE
     SHADER_DIR_BASE="${CMAKE_CURRENT_SOURCE_DIR}/shaders/"
     TEXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/textures/"
+    MAX_POINT_LIGHTS=${MAX_POINT_LIGHTS}
 )
 
 # compile shaders

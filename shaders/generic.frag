@@ -5,13 +5,20 @@ layout(set = 0, binding = 0) uniform CameraUBO {
     mat4 view;
     mat4 proj;
     vec3 position;
+    uint debugConfig;
 } camera;
 
+struct PointLight {
+    vec3 position;
+    vec3 color;
+    float intensity;
+    float decay;
+    float maxDistance;
+};
+
 layout(set = 0, binding = 1) uniform LightUBO {
-    uint lightCount;
-    // Up to 10 lights at once
-    vec3 lightPositions[10];
-    vec3 lightColors[10];
+    PointLight pointLights[MAX_POINT_LIGHTS];
+    uint pointLightCount;
 } lights;
 
 // Set 1: Material UBOs
@@ -45,17 +52,55 @@ layout(location = 3) in vec2 fragTexCoord;
 layout(location = 0) out vec4 outColor;
 
 void main() {
-    vec3 diffuseColor = texture(diffuse_tex, fragTexCoord).rgb;
+    const bool DEBUG_1 = (camera.debugConfig & 0x1u) != 0u;
+
+    const vec3 normal = normalize(fragNormal);
+    const vec3 viewDir = normalize(camera.position - fragPosition);
+
+    const vec3 diffuse_color = texture(diffuse_tex, fragTexCoord).rgb;
+    const vec3 normal_color = texture(normal_tex, fragTexCoord).rgb;
+    const vec3 specular_color = texture(specular_tex, fragTexCoord).rgb;
+    const vec3 emissive_color = texture(emissive_tex, fragTexCoord).rgb;
+
+    vec3 result = diffuse_color * AMBIENT_LIGHT;
+
+    for (uint i = 0u; i < lights.pointLightCount; i++) {
+        const PointLight light = lights.pointLights[i];
+
+        const float distance = length(light.position - fragPosition);
+
+        const float attenuation = 1.0 / max(
+            pow(distance, light.decay), 0.01
+        ) * light.intensity;
+
+        if (DEBUG_1) {
+            // const float color = pow(2.0, -distance / 4.0);
+            // const float color = distance - 40.0;
+            const float color = 1.0 / max(
+                pow(distance, light.decay), 0.01
+            );
+
+            result = vec3(color, color, color);
+
+            continue;
+        }
+
+        if (attenuation <= 0.001) continue;
+
+        // Diffuse
+        const vec3 lightDir = normalize(light.position - fragPosition);
+        const float diff = max(dot(normal, lightDir), 0.0);
     
-    vec3 finalColor = diffuseColor;
+        // Specular
+        const vec3 reflectDir = reflect(-lightDir, normal);
+        const float spec = pow(max(dot(viewDir, reflectDir), 0.0), MATERIAL_SHININESS);
+    
+        // Apply attenuation and light color
+        const vec3 diffuse = diff * diffuse_color * light.color * attenuation;
+        const vec3 specular = spec * specular_color * light.color * attenuation;
+    
+        result += diffuse + specular;
+    }
 
-    vec2 uv = fragTexCoord - 0.5;
-    float vignette = 1.0 - dot(uv, uv) * 1.5;
-    vignette = smoothstep(0.3, 1.0, vignette);
-
-    finalColor *= vignette;
-
-    outColor = vec4(finalColor, pc.color.a);
-
-    outColor.a = 1.0 * lights.lightCount / 10.0;
+    outColor = vec4(result, 1.0) * pc.color;
 }

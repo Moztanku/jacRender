@@ -63,6 +63,14 @@ public:
 
     auto getCamera() -> Camera& { return m_camera; }
 
+    bool DEBUG_1{false};
+
+    glm::vec3 m_lightPos{0.0f, 0.0f, 0.0f};
+    glm::uint m_lightCount{1};
+    void setLightPos(glm::vec3 pos) {
+        m_lightPos = pos;
+    }
+
 private:
     Window& m_window;
     core::device::Instance m_instance;

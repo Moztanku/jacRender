@@ -239,7 +239,7 @@ auto Renderer::render() -> void
         m_framebuffer.getFramebuffer(imageIndex),
         m_swapchain.getExtent(),
         vulkan::ClearColor{
-            .color = {.float32 = {0.2f, 0.3f, 0.8f, 1.0f}}, // Nice blue background
+            .color = {.float32 = {0.01f, 0.01f, 0.01f, 1.0f}},
             .depthStencil = {1.0f, 0}
         }
     );
@@ -263,6 +263,8 @@ auto Renderer::render() -> void
     ubo.proj = m_camera.getProjection();
     ubo.proj[1][1] *= -1; // Vulkan uses a different coordinate system
 
+    ubo.debugConfig = static_cast<glm::uint32>(DEBUG_1);
+
     m_resourceManager.getMemoryManager().copyDataToBuffer(
         &ubo,
         sizeof(ubo),
@@ -270,8 +272,15 @@ auto Renderer::render() -> void
     );
 
     static shaders::generic::LightUBO lightUbo{};
-    lightUbo.lightCount = 5;
-    
+    lightUbo.pointLightCount = 1;
+
+    auto& light = lightUbo.pointLights[0];
+    light.position = glm::vec4{m_lightPos, 1.0f};
+    light.color = glm::vec3{1.0f, 1.0f, 1.0f};
+    light.intensity = 10.0f;
+    // light.decay = 2.0f;
+
+
     m_resourceManager.getMemoryManager().copyDataToBuffer(
         &lightUbo,
         sizeof(lightUbo),

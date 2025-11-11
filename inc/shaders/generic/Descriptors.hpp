@@ -18,14 +18,23 @@ struct CameraUBO {
     glm::mat4 view;
     glm::mat4 proj;
     glm::vec3 position;
+
+    glm::uint32 debugConfig;
 };
 
-constexpr uint8_t MAX_LIGHTS = 10;
+struct alignas(16) PointLight {
+    alignas(16) glm::vec3 position;
+    alignas(16) glm::vec3 color;
+    glm::float32 intensity{1.0f};
+    glm::float32 decay{2.0f};
+    glm::float32 maxDistance{0.0f};
+};
+
+static_assert(sizeof(PointLight) % 16 == 0, "PointLight must be 16-byte aligned for std140");
 
 struct LightUBO {
-    glm::uint32 lightCount;
-    glm::vec3 lightPositions[MAX_LIGHTS];
-    glm::vec3 lightColors[MAX_LIGHTS];
+    PointLight pointLights[MAX_POINT_LIGHTS];
+    glm::uint32 pointLightCount;
 };
 
 [[nodiscard]]
