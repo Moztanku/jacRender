@@ -51,6 +51,9 @@ layout(location = 3) in vec2 fragTexCoord;
 // Output color
 layout(location = 0) out vec4 outColor;
 
+const float AMBIENT_LIGHT = 0.01;
+const float MATERIAL_SHININESS = 0.0;
+
 void main() {
     const bool DEBUG_1 = (camera.debugConfig & 0x1u) != 0u;
 
@@ -66,6 +69,8 @@ void main() {
 
     for (uint i = 0u; i < lights.pointLightCount; i++) {
         const PointLight light = lights.pointLights[i];
+
+        if (light.intensity <= 0.0) continue;
 
         const float distance = length(light.position - fragPosition);
 

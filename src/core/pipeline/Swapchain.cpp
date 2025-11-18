@@ -133,11 +133,10 @@ Swapchain::Swapchain(
     createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
     createInfo.surface = surface.getSurface();
 
-    createInfo.minImageCount = std::clamp(
-        surface_capabilities.minImageCount + 1,
-        surface_capabilities.minImageCount,
-        surface_capabilities.maxImageCount
-    );
+    createInfo.minImageCount = surface_capabilities.minImageCount + 1;
+    if (createInfo.minImageCount > surface_capabilities.maxImageCount && surface_capabilities.maxImageCount != 0) {
+        createInfo.minImageCount = surface_capabilities.maxImageCount;
+    }
 
     createInfo.imageFormat = surface_format.format;
     createInfo.imageColorSpace = surface_format.colorSpace;

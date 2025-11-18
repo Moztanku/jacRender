@@ -26,6 +26,7 @@
 #include "graphics/Texture.hpp"
 #include "graphics/Model.hpp"
 #include "systems/ResourceManager.hpp"
+#include "systems/LightingSystem.hpp"
 #include "graphics/Camera.hpp"
 
 namespace graphics {

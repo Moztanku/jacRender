@@ -33,7 +33,7 @@ struct alignas(16) PointLight {
 static_assert(sizeof(PointLight) % 16 == 0, "PointLight must be 16-byte aligned for std140");
 
 struct LightUBO {
-    PointLight pointLights[MAX_POINT_LIGHTS];
+    std::array<PointLight, MAX_POINT_LIGHTS> pointLights;
     glm::uint32 pointLightCount;
 };
 
