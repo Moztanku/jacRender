@@ -271,19 +271,10 @@ auto Renderer::render() -> void
         m_cameraUBOs[m_currentFrame]
     );
 
-    static shaders::generic::LightUBO lightUbo{};
-    lightUbo.pointLightCount = 1;
-
-    auto& light = lightUbo.pointLights[0];
-    light.position = glm::vec4{m_lightPos, 1.0f};
-    light.color = glm::vec3{1.0f, 1.0f, 1.0f};
-    light.intensity = 10.0f;
-    // light.decay = 2.0f;
-
-
+    // Update lighting UBO
     m_resourceManager.getMemoryManager().copyDataToBuffer(
-        &lightUbo,
-        sizeof(lightUbo),
+        &m_lightingSystem.getLightUBO(),
+        sizeof(shaders::generic::LightUBO),
         m_lightUBOs[m_currentFrame]
     );
 

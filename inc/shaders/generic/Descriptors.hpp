@@ -35,6 +35,7 @@ static_assert(sizeof(PointLight) % 16 == 0, "PointLight must be 16-byte aligned 
 struct LightUBO {
     std::array<PointLight, MAX_POINT_LIGHTS> pointLights;
     glm::uint32 pointLightCount;
+    glm::float32 ambientLight{0.50f};
 };
 
 [[nodiscard]]
@@ -45,7 +46,7 @@ auto get_global_desc_pool_sizes(uint32_t descCount) -> std::vector<VkDescriptorP
 
 // Material UBO
 struct MaterialUBO {
-    glm::float32 placeholder;
+    glm::float32 shininess{4.0f};
 };
 
 [[nodiscard]]

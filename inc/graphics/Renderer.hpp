@@ -63,21 +63,16 @@ public:
     auto recreateSwapchain() -> void;
 
     auto getCamera() -> Camera& { return m_camera; }
+    auto getLightingSystem() -> systems::LightingSystem& { return m_lightingSystem; }
 
     bool DEBUG_1{false};
-
-    glm::vec3 m_lightPos{0.0f, 0.0f, 0.0f};
-    glm::uint m_lightCount{1};
-    void setLightPos(glm::vec3 pos) {
-        m_lightPos = pos;
-    }
-
 private:
     Window& m_window;
     core::device::Instance m_instance;
     core::device::Surface m_surface;
     core::device::Device m_device;
     systems::ResourceManager m_resourceManager;
+    systems::LightingSystem m_lightingSystem;
 
     core::pipeline::Swapchain m_swapchain;
     const uint8_t m_maxFramesInFlight;

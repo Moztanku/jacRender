@@ -19,11 +19,13 @@ struct PointLight {
 layout(set = 0, binding = 1) uniform LightUBO {
     PointLight pointLights[MAX_POINT_LIGHTS];
     uint pointLightCount;
-} lights;
+
+    float ambientLight;
+} lighting;
 
 // Set 1: Material UBOs
 layout(set = 1, binding = 0) uniform MaterialUBO {
-    float placeholder;
+    float shininess;
 } material;
 
 layout(set = 1, binding = 1) uniform sampler2D diffuse_tex;
@@ -51,9 +53,6 @@ layout(location = 3) in vec2 fragTexCoord;
 // Output color
 layout(location = 0) out vec4 outColor;
 
-const float AMBIENT_LIGHT = 0.01;
-const float MATERIAL_SHININESS = 0.0;
-
 void main() {
     const bool DEBUG_1 = (camera.debugConfig & 0x1u) != 0u;
 
@@ -65,10 +64,14 @@ void main() {
     const vec3 specular_color = texture(specular_tex, fragTexCoord).rgb;
     const vec3 emissive_color = texture(emissive_tex, fragTexCoord).rgb;
 
-    vec3 result = diffuse_color * AMBIENT_LIGHT;
+    vec3 result = diffuse_color * lighting.ambientLight;
 
-    for (uint i = 0u; i < lights.pointLightCount; i++) {
-        const PointLight light = lights.pointLights[i];
+    if (DEBUG_1) {
+        result = vec3(0.0);
+    }
+
+    for (uint i = 0u; i < lighting.pointLightCount; i++) {
+        const PointLight light = lighting.pointLights[i];
 
         if (light.intensity <= 0.0) continue;
 
@@ -85,7 +88,7 @@ void main() {
                 pow(distance, light.decay), 0.01
             );
 
-            result = vec3(color, color, color);
+            result += vec3(color, color, color);
 
             continue;
         }
@@ -98,7 +101,7 @@ void main() {
     
         // Specular
         const vec3 reflectDir = reflect(-lightDir, normal);
-        const float spec = pow(max(dot(viewDir, reflectDir), 0.0), MATERIAL_SHININESS);
+        const float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
     
         // Apply attenuation and light color
         const vec3 diffuse = diff * diffuse_color * light.color * attenuation;

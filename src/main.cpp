@@ -66,6 +66,15 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) -> int {
 
     auto& camera = renderer.getCamera();
     camera.changeFov(-30.f);
+
+    shaders::generic::PointLight light{
+        .position = {},
+        .color = {1.0f, 1.0f, 1.0f},
+        .intensity = 10.0f,
+        .decay = 2.0f
+    };
+    const auto light_idx = renderer.getLightingSystem().addPointLight(light);
+    const auto light2_idx = renderer.getLightingSystem().addPointLight(light);
     
     const float cameraSpeed = 0.0025f;
 
@@ -81,8 +90,7 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) -> int {
         GLFW_KEY_LEFT_BRACKET,  // Roll left
         GLFW_KEY_RIGHT_BRACKET, // Roll right
         // Debug
-        GLFW_KEY_1,
-        GLFW_KEY_2
+        GLFW_KEY_1
     };
 
     const auto model = renderer.loadModel("models/Character_Male.fbx").value();
@@ -98,17 +106,25 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) -> int {
         glm::vec3 cameraRotation{0.f};
         
         static bool keyLock1 = false;
-        static bool keyLock2 = false;
         for (const auto& [event, key] : events)
             if (event == GLFW_PRESS)
                 switch (key) {
                     // Movement
-                    case GLFW_KEY_W: cameraMovement.z += cameraSpeed; break;
-                    case GLFW_KEY_S: cameraMovement.z -= cameraSpeed; break;
-                    case GLFW_KEY_A: cameraMovement.x -= cameraSpeed; break;
-                    case GLFW_KEY_D: cameraMovement.x += cameraSpeed; break;
-                    case GLFW_KEY_E: cameraMovement.y += cameraSpeed; break;
-                    case GLFW_KEY_Q: cameraMovement.y -= cameraSpeed; break;
+                    // case GLFW_KEY_W: cameraMovement.z += cameraSpeed; break;
+                    // case GLFW_KEY_S: cameraMovement.z -= cameraSpeed; break;
+                    // case GLFW_KEY_A: cameraMovement.x -= cameraSpeed; break;
+                    // case GLFW_KEY_D: cameraMovement.x += cameraSpeed; break;
+                    // case GLFW_KEY_E: cameraMovement.y += cameraSpeed; break;
+                    // case GLFW_KEY_Q: cameraMovement.y -= cameraSpeed; break;
+                    case GLFW_KEY_W:
+                    case GLFW_KEY_S: {
+                        const auto new_ambient = std::clamp(
+                            renderer.getLightingSystem().getLightUBO().ambientLight + (key == GLFW_KEY_W ? 0.00025f : -0.00025f),
+                            0.0f,
+                            1.0f
+                        );
+                        renderer.getLightingSystem().setAmbientLight(new_ambient);
+                    } break;
                     // Rotation
                     case GLFW_KEY_LEFT_BRACKET:  cameraRotation.z += cameraSpeed; break;
                     case GLFW_KEY_RIGHT_BRACKET: cameraRotation.z -= cameraSpeed; break;
@@ -117,15 +133,10 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) -> int {
                         renderer.DEBUG_1 = keyLock1 ? renderer.DEBUG_1 : !renderer.DEBUG_1;
                         keyLock1 = true;
                         break;
-                    case GLFW_KEY_2:
-                        renderer.m_lightCount = keyLock2 ? renderer.m_lightCount : (renderer.m_lightCount + 1) % 2;
-                        keyLock2 = true; 
-                        break;
                 }
             else if (event == GLFW_RELEASE)
                 switch (key) {
                     case GLFW_KEY_1: keyLock1 = false; break;
-                    case GLFW_KEY_2: keyLock2 = false; break;
                 };
 
         camera.move(cameraMovement);
@@ -142,12 +153,24 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) -> int {
 
         const float RADIUS = 10.0f;
         const float SECS_PER_REV = 5.0f;
-        const float x = RADIUS * std::cos((current_time / SECS_PER_REV) * 2.0f * glm::pi<float>());
-        const float z = RADIUS * std::sin((current_time / SECS_PER_REV) * 2.0f * glm::pi<float>());
-        const float y = 5.0f;
-        
-        renderer.setLightPos(glm::vec3{x, y, z});
-        // renderer.setLightPos(camera.getPosition());
+        glm::vec3 lightPos{
+            RADIUS * std::cos((current_time / SECS_PER_REV) * 2.0f * glm::pi<float>()),
+            5.0f,
+            RADIUS * std::sin((current_time / SECS_PER_REV) * 2.0f * glm::pi<float>())
+        };
+
+        renderer.getLightingSystem().updatePointLight(
+            light_idx,
+            &lightPos
+        );
+
+        lightPos.x *= -1.0f;
+        lightPos.z *= -1.0f;
+
+        renderer.getLightingSystem().updatePointLight(
+            light2_idx,
+            &lightPos
+        );
 
         renderer.render();
 
@@ -155,18 +178,22 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) -> int {
         const std::chrono::duration<float, std::milli> frame_duration = frame_end - frame_start;
 
         const float FPS = 1000.f / frame_duration.count();
-
         debug_print(
-            "Camera: (",
-            camera.getPosition().x,
-            camera.getPosition().y,
-            camera.getPosition().z,
-            "\b) Light: (",
-            x,
-            y,
-            z,
-            "\b)"
+            "Frame Time: ", frame_duration.count(), "ms | ",
+            "FPS: ", FPS, " | ",
+            "Ambient: ", renderer.getLightingSystem().getLightUBO().ambientLight
         );
+        // debug_print(
+        //     "Camera: (",
+        //     camera.getPosition().x,
+        //     camera.getPosition().y,
+        //     camera.getPosition().z,
+        //     "\b) Light: (",
+        //     x,
+        //     y,
+        //     z,
+        //     "\b)"
+        // );
     }
 
     return 0;
