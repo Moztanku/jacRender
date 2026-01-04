@@ -25,6 +25,28 @@ set(RES_DIR ${CMAKE_CURRENT_SOURCE_DIR}/res)
 find_package(Vulkan REQUIRED)
 find_package(glfw3 REQUIRED)
 find_package(glm REQUIRED)
+find_package(assimp REQUIRED)
+
+# Fetch external dependencies
+include(FetchContent)
+
+# VulkanMemoryAllocator
+FetchContent_Declare(
+    VulkanMemoryAllocator
+    GIT_REPOSITORY https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
+    GIT_TAG v3.1.0)
+FetchContent_MakeAvailable(VulkanMemoryAllocator)
+
+# stb_image - header-only library
+FetchContent_Declare(
+    stb
+    GIT_REPOSITORY https://github.com/nothings/stb.git
+    GIT_TAG master)
+FetchContent_MakeAvailable(stb)
+
+# Create an interface library for stb
+add_library(stb INTERFACE)
+target_include_directories(stb INTERFACE ${stb_SOURCE_DIR})
 
 # Main executable
 add_executable(${PROJECT_NAME})
@@ -34,19 +56,34 @@ target_sources(${PROJECT_NAME}
     ${SRC_DIR}/main.cpp
     # utilities
     ${SRC_DIR}/common/utils.cpp
-    # Vulkan wrappers
-    ${SRC_DIR}/vulkan/Window.cpp
-    ${SRC_DIR}/vulkan/Instance.cpp
-    ${SRC_DIR}/vulkan/Surface.cpp
-    ${SRC_DIR}/vulkan/Device.cpp
-    ${SRC_DIR}/vulkan/Swapchain.cpp
-    ${SRC_DIR}/vulkan/Shader.cpp
-    ${SRC_DIR}/vulkan/Pipeline.cpp
-    ${SRC_DIR}/vulkan/Framebuffer.cpp
-    ${SRC_DIR}/vulkan/Commandbuffer.cpp
+    # Implementation wrappers for external libraries
+    ${SRC_DIR}/core/memory/vma.cpp
+    ${SRC_DIR}/core/memory/stb_image.cpp
+    # Device management
+    ${SRC_DIR}/core/device/Instance.cpp
+    ${SRC_DIR}/core/device/Device.cpp
+    ${SRC_DIR}/core/device/Surface.cpp
+    # Pipeline management
+    ${SRC_DIR}/core/pipeline/Framebuffer.cpp
+    ${SRC_DIR}/core/pipeline/Pipeline.cpp
+    ${SRC_DIR}/core/pipeline/Swapchain.cpp
+    ${SRC_DIR}/core/pipeline/Shader.cpp
+    # Memory management
+    #
+    # Commands and command buffers
+    ${SRC_DIR}/core/commands/CommandPool.cpp
+    ${SRC_DIR}/core/commands/CommandBuffer.cpp
+    # Low level vulkan helpers
     ${SRC_DIR}/vulkan/utils.cpp
-    # Renderer related
-    ${SRC_DIR}/Renderer.cpp)
+    ${SRC_DIR}/vulkan/api.cpp
+    # Shader definitions
+    ${SRC_DIR}/shaders/generic/Descriptors.cpp
+    # Systems
+    ${SRC_DIR}/systems/MemoryManager.cpp
+    # Graphics
+    ${SRC_DIR}/graphics/Window.cpp
+    ${SRC_DIR}/graphics/Renderer.cpp
+    ${SRC_DIR}/graphics/Camera.cpp)
 
 target_include_directories(${PROJECT_NAME}
     PRIVATE
@@ -56,17 +93,25 @@ target_link_libraries(${PROJECT_NAME}
     PRIVATE
     Vulkan::Vulkan
     glfw
-    glm)
+    glm
+    stb
+    VulkanMemoryAllocator
+    assimp)
 
 target_compile_options(${PROJECT_NAME}
     PRIVATE
     $<$<CONFIG:Debug>:${DEBUG_FLAGS}>
     $<$<CONFIG:Release>:${RELEASE_FLAGS}>)
 
-# compile shaders
-add_subdirectory(shaders)
+set(MAX_POINT_LIGHTS 10)
+
 target_compile_definitions(${PROJECT_NAME}
     PRIVATE
     SHADER_DIR_BASE="${CMAKE_CURRENT_SOURCE_DIR}/shaders/"
+    TEXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/textures/"
+    MAX_POINT_LIGHTS=${MAX_POINT_LIGHTS}
 )
+
+# compile shaders
+add_subdirectory(shaders)
 add_dependencies(${PROJECT_NAME} shaders)

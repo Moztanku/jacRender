@@ -149,4 +149,15 @@ auto get_debug_messenger_create_info() noexcept -> VkDebugUtilsMessengerCreateIn
     return createInfo;
 }
 
+[[nodiscard]]
+auto get_default_validation_layers() noexcept -> std::vector<const char*> {
+    if (!common::DEBUG) {
+        return {};
+    }
+
+    return {
+        "VK_LAYER_KHRONOS_validation"
+    };
+}
+
 } // namespace vulkan
